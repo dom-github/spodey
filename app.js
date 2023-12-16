@@ -435,25 +435,27 @@ function startWeb(){
             });
             
             areaBoxes.forEach((x) => { 
-                if(x.p3){
-                    if(
-                    pointInTriangle({x: tx, y: ty}, x.p1, x.p2, x.p3)
-                    || pointInTriangle({x: tx, y: ty}, x.p1, x.p2, x.p4)
-                    ) {
-                        console.log("on a triangle");
+                if(tx >= x.p1.x - 1
+                    && tx <= x.p2.x + 1
+                    && ty <= x.p1.y + 1
+                    && ty >= x.p2.y - 1){
+                    if(x.p3){
+                        if(
+                        pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
+                        || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                        ) {
+                            console.log("startweb triangle");
+                            webOrigin.x = tx;
+                            webOrigin.y = ty;
+                            layWeb = true;
+                            walkArea = true;
+                        }
+                    } else {
                         webOrigin.x = tx;
                         webOrigin.y = ty;
                         layWeb = true;
                         walkArea = true;
                     }
-                } else if(tx >= x.p1.x - 1
-                    && tx <= x.p2.x + 1
-                    && ty <= x.p1.y + 1
-                    && ty >= x.p2.y - 1){
-                        webOrigin.x = tx;
-                        webOrigin.y = ty;
-                        layWeb = true;
-                        walkArea = true;
                 }}
             );
             if(!walkArea){
@@ -513,16 +515,30 @@ function placeWeb(){
         });
         
         areaBoxes.forEach((x) => { 
-            if(tx >= x.p1.x
-                && tx <= x.p2.x
-                && ty <= x.p1.y
-                && ty >= x.p2.y){
+            if(tx >= x.p1.x - 1
+                && tx <= x.p2.x + 1
+                && ty <= x.p1.y + 1
+                && ty >= x.p2.y - 1){
+                if(x.p3){
+                    console.log("triangle check");
+                    if(
+                    pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
+                    || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                    ) {
+                        console.log("placeweb triangle");
+                        walkArea = true;
+                        layWeb = false;
+                        webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: doubleClamp(tx, x.p1.x, x.p2.x),
+                            y: doubleClamp(ty, x.p2.y, x.p1.y)}, solid: false, stuck: []})
+                    }
+                } else {
                     walkArea = true;
                     layWeb = false;
                     webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: doubleClamp(tx, x.p1.x, x.p2.x),
                         y: doubleClamp(ty, x.p2.y, x.p1.y)}, solid: false, stuck: []})
                 }
-        });
+            }});
+            
         if(!walkArea){
             const line = getNearestWalkLine(cursorPos.components[0], cursorPos.components[1]);
             if (line > -1) {
@@ -1088,8 +1104,8 @@ function drawTree(x, y, s, seg, ang){
          const dsx = boundaryColliders[boundaryColliders.length-1 - (j*2)].p1.x;
          const dsy = boundaryColliders[boundaryColliders.length- 1 - (j*2)].p1.y;
 
-         const sx1 = boundaryColliders[boundaryColliders.length-1].p1.x;
-         const sy1 = boundaryColliders[boundaryColliders.length-1].p1.y;
+        //  const sx1 = boundaryColliders[boundaryColliders.length-1].p1.x;
+        //  const sy1 = boundaryColliders[boundaryColliders.length-1].p1.y;
  
           const dsx2 = boundaryColliders[boundaryColliders.length-1 - (j*2)].p2.x;
           const dsy2 = boundaryColliders[boundaryColliders.length- 1 - (j*2)].p2.y;
@@ -1102,8 +1118,8 @@ function drawTree(x, y, s, seg, ang){
         boundaryColliders.push({p1: {x: sx, y: sy-0.5}, p2: {x: dsx + s, y: dsy+0.5}, solid: false});
 
         //area collision for big tree only
-        if(s > spideyRadius/2 && j > 0){
-            areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: sx1, y: sy1}})
+        if(s > spideyRadius/2){
+            areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: dsx + s, y: dsy}})
         } 
         
         len += 1;
@@ -1126,16 +1142,27 @@ function drawTree(x, y, s, seg, ang){
     }
     //rotate colliders
     if(s > spideyRadius/2){
-        for(let l=0;l<seg-1;l++){
+        for(let l=0;l<=seg;l++){
             const cur = areaBoxes[areaid + l];
             const prot1 = rotate_point(x, y, angR, cur.p1);
             const prot2 = rotate_point(x, y, angR, cur.p2);
             const prot3 = rotate_point(x, y, angR, cur.p3);
             const prot4 = rotate_point(x, y, angR, cur.p4);
-            areaBoxes[areaid+l].p1 = prot1;
-            areaBoxes[areaid+l].p2 = prot2;
-            areaBoxes[areaid+l].p3 = prot3;
-            areaBoxes[areaid+l].p4 = prot4;
+            // for triangle collisions
+            // we use areaboxes for AABB check in p1,p2 
+            // and finally get all vtex points in p3,p4,p5,p6 for 2 tris
+            // cur.p1 = prot1;
+            // cur.p2 = prot2;
+            cur.p3 = prot3;
+            cur.p4 = prot4;
+            cur.p5 = prot1;
+            cur.p6 = prot2;
+            //get min XY and max XY from all 4 points (could have any rotation)
+            cur.p1 = {x: Math.min(Math.min(cur.p3.x, cur.p5.x), Math.min(cur.p4.x, cur.p6.x)),
+                y: Math.max(Math.max(cur.p3.y, cur.p5.y), Math.max(cur.p4.y, cur.p6.y))};
+            cur.p2 = {x: Math.max(Math.max(cur.p3.x, cur.p5.x), Math.max(cur.p4.x, cur.p6.x)),
+                    y: Math.min(Math.min(cur.p3.y, cur.p5.y), Math.min(cur.p4.y, cur.p6.y))};
+                
         }
     }
 
@@ -1697,14 +1724,24 @@ function spideyMove(leg) {
                     walkArea = true; 
                 }
         });
-        areaBoxes.forEach((x) => {
+        areaBoxes.forEach((x) => { 
             if(legPosX >= x.p1.x - 1
                 && legPosX <= x.p2.x + 1
-                 && legPosY <= x.p1.y + 1
-                  && legPosY >= x.p2.y - 1){
+                && legPosY <= x.p1.y + 1
+                && legPosY >= x.p2.y - 1){
+                if(x.p3){
+                    if(
+                    pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p6, x.p3)
+                    || pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p6, x.p4)
+                    ) {
+                        console.log("Spideymove triangle");
+                        walkArea = true;
+                    }
+                } else {
                     walkArea = true;
                 }
-        });
+            }}
+        );
 
         let nearest = 9999999;
         let line = -1;
