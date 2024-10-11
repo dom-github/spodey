@@ -4,9 +4,10 @@ const canvas = document.getElementById("worldCanvas");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
 
+
 //viewport.id = "viewport";
-viewport.width = window.innerWidth * 0.99;
-viewport.height = window.innerHeight * 0.99;
+viewport.width = window.innerWidth;// * 0.99;
+viewport.height = window.innerHeight;// * 0.99;
 
 
 const context = canvas.getContext("2d", { alpha: false });
@@ -20,7 +21,7 @@ console.log(window.innerHeight, window.innerWidth)
 
 
 //15360
-const worldSize = {width: 153600, height: 2160};
+const worldSize = {width: 15360, height: 6666};
 
 background.width = window.innerWidth;
 background.height = window.innerHeight;
@@ -37,11 +38,14 @@ const worldScale = 3;
 
 
 window.onresize = setDim;
-
 function setDim() {
-    viewport.width = window.innerWidth * 0.99;
-    viewport.height = window.innerHeight * 0.99;
 
+    viewport.width =  window.innerWidth;
+    viewport.height = window.innerHeight;
+    
+    viewport.width = Math.max(400, viewport.width);
+    viewport.height = Math.max(300,viewport.height);
+    
 }
 context.scale(worldScale, worldScale)
 bgctx.scale(worldScale, worldScale)
@@ -49,7 +53,8 @@ bgctx.scale(worldScale, worldScale)
 
 const framerate = 60;
 const perfectFrameTime = 1000 / framerate;
-let deltaTime = 0;
+let deltaTime = 1;
+let prevTimestamp = 0;
 let lastTimestamp = 0;
 
 //debug infos
@@ -258,7 +263,8 @@ function intersection(c1, c2) {
 let position = new Vector(0, 0);
 let speed = new Vector(0, 0);
 let mousedir = new Vector(0, 0);
-let cursorPos = new Vector(0, 0);
+let cursorPos = new Vector(viewport.width * 0.5, viewport.height * 0.5);
+let mousePosition = {x: viewport.width * 0.5, y: viewport.height * 0.5}
 
     function sqr(x) { return x * x }
     function dist2(v, w) { return sqr(v.x - w.x) + sqr(v.y - w.y) }
@@ -284,7 +290,7 @@ let cursorPos = new Vector(0, 0);
     }
 
 let layWeb = false;
-let webOrigin = {x: 0, y: 0}
+let webOrigin = {x: 0, y: 0, webID: -1}
 
 function getNearestWalkLine(x, y){
     let nearest = 9999999;
@@ -316,8 +322,8 @@ let LMBDouble = 0;
 let RMBDouble = 0;
 function mousedown(e){
     if(mouseFocus) {
-        const w = viewport.width;
-        const h = viewport.height;
+        // const w = viewport.width;
+        // const h = viewport.height;
         mouseCursor.x = !LMBHeld && !RMBHeld ? 0 : mouseCursor.x// + Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldCanvas.width - w));
         mouseCursor.y = !LMBHeld && !RMBHeld ? 0 : mouseCursor.y// + Math.min(spideyPos.y - (h * 0.5), worldCanvas.height - h);
         cursorPos = new Vector(mouseCursor.x, mouseCursor.y)
@@ -347,14 +353,14 @@ function mousedown(e){
 
             if (e.button === 0){
                 LMBHeld = lastTimestamp;
-                console.log("Doubleclick?", LMBHeld - LMBDouble);
+                //console.log("Doubleclick?", LMBHeld - LMBDouble);
                 if (count === 0){
                     legMods[closest].anim = grabWeb;
                     legMods[closest].start = lastTimestamp;
                     legMods[closest].dx = -spideyLegs[closest].x;
                     legMods[closest].dy = -spideyLegs[closest].y;
                 } else if (count === 1 && LMBHeld - LMBDouble < 500 ) {
-                    console.log("Ldlbclick!")
+                    //console.log("Ldlbclick!")
                         //restart anim on dblclick
                         legMods[closest].anim = grabWeb;
                         legMods[closest].start = lastTimestamp;
@@ -370,14 +376,14 @@ function mousedown(e){
 
             } else if(e.button === 2 ){
             RMBHeld = lastTimestamp;
-            console.log("RDoubleclick?", RMBHeld - RMBDouble);
+            //console.log("RDoubleclick?", RMBHeld - RMBDouble);
             if(count === 0){
                 legMods[closest].anim = readyStrike;
                 legMods[closest].start = lastTimestamp;
                 legMods[closest].dx = 0;
                 legMods[closest].dy = -spideyLegs[closest].y * 2;
             }else if (count === 1 && RMBHeld - RMBDouble < 500){
-                console.log("Rdlbclick!")
+                //console.log("Rdlbclick!")
                 legMods[closest].anim = readyStrike;
                 legMods[closest].start = lastTimestamp;
                 legMods[closest].dx = 0;
@@ -392,6 +398,9 @@ function mousedown(e){
         }
         
 
+    } else {
+        mouseCursor.x = e.clientX;
+        mouseCursor.y = e.clientY;
     }
     
 }
@@ -421,69 +430,121 @@ function startWeb(){
     //console.log("start");
     let walkArea = false;
 
-            //walkAreas
-            areaCircles.forEach((x) => {
-                const intersect = intersection({x: tx, 
-                    y: ty, r: spideyRadius/5}, x)
-                    //console.log(intersect)
-                    if (intersect.one_is_in_other){
-                        webOrigin.x = tx;
-                        webOrigin.y = ty;
-                        layWeb = true;
-                        walkArea = true;
-                    }
-            });
-            
-            areaBoxes.forEach((x) => { 
-                if(tx >= x.p1.x - 1
-                    && tx <= x.p2.x + 1
-                    && ty <= x.p1.y + 1
-                    && ty >= x.p2.y - 1){
-                    if(x.p3){
-                        if(
-                        pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
-                        || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
-                        ) {
-                            console.log("startweb triangle");
-                            webOrigin.x = tx;
-                            webOrigin.y = ty;
-                            layWeb = true;
-                            walkArea = true;
-                        }
-                    } else {
-                        webOrigin.x = tx;
-                        webOrigin.y = ty;
-                        layWeb = true;
-                        walkArea = true;
-                    }
-                }}
-            );
-            if(!walkArea){
-                const line = getNearestWalkLine(cursorPos.components[0], cursorPos.components[1]);
-                if (line > -1) {
-                    const start = closestSegmentPoint({x: cursorPos.components[0], y: cursorPos.components[1]}, 
-                    {x: walkLines[line].p1.x, y: walkLines[line].p1.y}, 
-                    {x: walkLines[line].p2.x, y: walkLines[line].p2.y}, );
-                    webOrigin.x = spideyPos.x + start.x;
-                    webOrigin.y = spideyPos.y + start.y;
-                    layWeb = true;        
-                };
+    //walkAreas
+    areaCircles.forEach((x) => {
+        const intersect = intersection({x: tx, 
+            y: ty, r: spideyRadius/5}, x)
+            //console.log(intersect)
+            if (intersect.one_is_in_other){
+                webOrigin.x = tx;
+                webOrigin.y = ty;
+                layWeb = true;
+                walkArea = true;
             }
-        
-       
+    });
     
+    areaBoxes.forEach((x) => { 
+        if(tx >= x.p1.x - 1
+            && tx <= x.p2.x + 1
+            && ty <= x.p1.y + 1
+            && ty >= x.p2.y - 1){
+            if(x.p3){
+                if(
+                pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
+                || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                ) {
+                    // console.log("startweb triangle");
+                    webOrigin.x = tx;
+                    webOrigin.y = ty;
+                    layWeb = true;
+                    walkArea = true;
+                }
+            } else {
+                webOrigin.x = tx;
+                webOrigin.y = ty;
+                layWeb = true;
+                walkArea = true;
+            }
+        }}
+    );
+
+    if(!walkArea){
+        const line = getNearestWalkLine(cursorPos.components[0], cursorPos.components[1]);
+        if (line > -1) {
+            const start = closestSegmentPoint({x: cursorPos.components[0], y: cursorPos.components[1]}, 
+            {x: walkLines[line].p1.x, y: walkLines[line].p1.y}, 
+            {x: walkLines[line].p2.x, y: walkLines[line].p2.y}, );
+            webOrigin.x = spideyPos.x + start.x;
+            webOrigin.y = spideyPos.y + start.y;
+            webOrigin.webID = walkLines[line].webID;
+            layWeb = true;        
+        };
+    } else {
+        webOrigin.x = tx;
+        webOrigin.y = ty;
+        layWeb = true;
+    }
 }
 
 function stopWeb(){
     //console.log("stop");
     
-    const tx = cursorPos.components[0] + spideyPos.x;
-    const ty = cursorPos.components[1] + spideyPos.y;
-    
-
-    if(Math.hypot(cursorPos.components[0], cursorPos.components[1]) < spideyRadius/5) {
+    // const tx = cursorPos.components[0] + spideyPos.x;
+    // const ty = cursorPos.components[1] + spideyPos.y;
+    const len = Math.hypot(cursorPos.components[0], cursorPos.components[1])
+    if(len < spideyRadius/5
+        || (lastTimestamp - RMBDouble < 300 && len < spideyRadius / 2)) {
         layWeb = false;
     }
+    
+}
+function launchWeb(leg){
+    
+
+    if(
+        Math.hypot(mouseCursor.x, mouseCursor.y) > spideyRadius 
+        && lastTimestamp - LMBDouble > 500 ) {
+        //console.log(LMBDouble)
+        var scaled = new Vector(mouseCursor.x, mouseCursor.y);
+        //scaled = scaled.scaleBy(2);
+        scaled = scaled.scaleBy(Math.min(2, (spideyRadius*4)/scaled.length()));
+        let other = -1;
+        for(let i=0;i<spideyLegs.length;i++){
+            if (legMods[i].anim === throwWeb && i !== leg){
+                other = i;
+                legMods[i].anim = falling ? none : walking;
+                legMods[i].x = legMods[i].dx;
+                legMods[i].y = legMods[i].dy;
+                legMods[i].start = lastTimestamp;
+                legMods[i].dx = 0;
+                legMods[i].dy = 0;
+            }
+        }
+        //console.log(other)
+        
+        if (!layWeb || (layWeb && shiftPressed)){
+            const type = other >= 0 ? 0 : 1;
+            if (type) scaled = scaled.scaleBy(0.85)
+            projectiles.push({type: type, x: spideyPos.x, y: spideyPos.y, speedx: scaled.components[0] + speed.components[0], speedy: scaled.components[1] + speed.components[1], start: lastTimestamp})
+        } else {
+            placeWeb();
+            if (other >= 0) startWeb();
+        }
+    } else {
+        if(layWeb){
+            placeWeb();
+        } else {
+            startWeb();
+            //if startweb fails ... maybe remove
+            if (falling && !layWeb) {
+                var scaled = new Vector(mouseCursor.x, mouseCursor.y);
+                //scaled = scaled.scaleBy(2);
+                scaled = scaled.scaleBy(Math.min(2, (spideyRadius*4)/scaled.length())).scaleBy(0.75);
+                projectiles.push({type: 1, x: spideyPos.x, y: spideyPos.y, speedx: scaled.components[0] + speed.components[0], speedy: scaled.components[1] + speed.components[1], start: lastTimestamp})
+            }
+        };
+    }
+    
     
 }
 
@@ -497,10 +558,12 @@ function placeWeb(){
     const tx = cursorPos.components[0] + spideyPos.x;
     const ty = cursorPos.components[1] + spideyPos.y;
     const dist = dist2({x: tx, y: ty}, {x: webOrigin.x, y: webOrigin.y});
-    console.log(Math.sqrt(dist));
+    //console.log(Math.sqrt(dist));
     //don't make short webs 
     if(Math.sqrt(dist) > spideyRadius/4) {
         let walkArea = false;
+        let p1, p2;
+        let lineID = -1;
         //walkAreas
         areaCircles.forEach((x) => {
             const intersect = intersection({x: tx, 
@@ -510,51 +573,67 @@ function placeWeb(){
                     walkArea = true;
                     layWeb = false;
                     // length: dist, 
-                    webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: tx, y: ty}, solid: false, stuck: []})
+                    //webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: tx, y: ty}, solid: false, stuck: [], attached: [], attachedTo: [webOrigin.webID, -1]})
+                    p1 = {x: webOrigin.x, y: webOrigin.y};
+                    p2 = {x: tx, y: ty};
                 }
         });
-        
-        areaBoxes.forEach((x) => { 
-            if(tx >= x.p1.x - 1
-                && tx <= x.p2.x + 1
-                && ty <= x.p1.y + 1
-                && ty >= x.p2.y - 1){
-                if(x.p3){
-                    console.log("triangle check");
-                    if(
-                    pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
-                    || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
-                    ) {
-                        console.log("placeweb triangle");
+        if (!walkArea){
+            areaBoxes.forEach((x) => { 
+                if(tx >= x.p1.x - 1
+                    && tx <= x.p2.x + 1
+                    && ty <= x.p1.y + 1
+                    && ty >= x.p2.y - 1){
+                    if(x.p3){
+                        // console.log("triangle check");
+                        if(
+                        pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
+                        || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                        ) {
+                            // console.log("placeweb triangle");
+                            walkArea = true;
+                            layWeb = false;
+                            //webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: doubleClamp(tx, x.p1.x, x.p2.x),
+                            //    y: doubleClamp(ty, x.p2.y, x.p1.y)}, solid: false, stuck: [], attached: [], attachedTo: [webOrigin.webID, -1]})
+                            p1 = {x: webOrigin.x, y: webOrigin.y};
+                            p2 = {x: doubleClamp(tx, x.p1.x, x.p2.x), y: doubleClamp(ty, x.p2.y, x.p1.y)};
+                        }
+                    } else {
                         walkArea = true;
                         layWeb = false;
-                        webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: doubleClamp(tx, x.p1.x, x.p2.x),
-                            y: doubleClamp(ty, x.p2.y, x.p1.y)}, solid: false, stuck: []})
+                        //webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: doubleClamp(tx, x.p1.x, x.p2.x),
+                        //    y: doubleClamp(ty, x.p2.y, x.p1.y)}, solid: false, stuck: [], attached: [], attachedTo: [webOrigin.webID, -1]})
+                        p1 = {x: webOrigin.x, y: webOrigin.y};
+                        p2 = {x: doubleClamp(tx, x.p1.x, x.p2.x), y: doubleClamp(ty, x.p2.y, x.p1.y)};
                     }
-                } else {
-                    walkArea = true;
-                    layWeb = false;
-                    webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: doubleClamp(tx, x.p1.x, x.p2.x),
-                        y: doubleClamp(ty, x.p2.y, x.p1.y)}, solid: false, stuck: []})
-                }
-            }});
-            
+                }});
+            }
         if(!walkArea){
             const line = getNearestWalkLine(cursorPos.components[0], cursorPos.components[1]);
             if (line > -1) {
                 const start = closestSegmentPoint({x: cursorPos.components[0], y: cursorPos.components[1]}, 
                 {x: walkLines[line].p1.x, y: walkLines[line].p1.y}, 
                 {x: walkLines[line].p2.x, y: walkLines[line].p2.y}, );
-                place = {x: spideyPos.x + start.x, y: spideyPos.y + start.y};
+                const place = {x: spideyPos.x + start.x, y: spideyPos.y + start.y};
                 if (Math.sqrt(dist2(place, {x: webOrigin.x, y: webOrigin.y})) > spideyRadius/4) {
                         
                     layWeb = false;
-                    webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: place, solid: false, stuck: []})
-                    //console.log(boundaryColliders, walkLines)
+                    //webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: place, solid: false, stuck: [], attached: [], attachedTo: [webOrigin.webID, walkLines[line].webID]})
+                    p1 = {x: webOrigin.x, y: webOrigin.y};
+                    p2 = place;
+                    lineID = walkLines[line].webID;
                 }
-
             //console.log(boundaryColliders.length, deltaTime)
             };
+        }
+        //push a new web
+        //dont push if orig and dest are on the same web 
+        if (!layWeb && (webOrigin.webID !== lineID || lineID === -1)){
+            webArray.push({p1: p1, p2: p2, solid: false, stuck: [], vibros: [], attached: [], attachedTo: [webOrigin.webID, lineID]});
+            if(webOrigin.webID > -1) webArray[webOrigin.webID].attached.push(webArray.length - 1);
+            if(lineID > -1) webArray[lineID].attached.push(webArray.length - 1);
+            webOrigin.webID = -1;
+            console.log(webArray)
         }
     }
     
@@ -603,10 +682,14 @@ viewport.addEventListener("click", async () => {
 
 let mouseCursor = {x: 0, y: 0, lastMove: 0};
 function mouseMove(e){
-    mouseCursor.x += e.movementX;
-    mouseCursor.y += e.movementY;
+    mousePosition.x += e.movementX * 0.5;
+    mousePosition.y += e.movementY * 0.5;
+    mouseCursor.x += e.movementX * 0.5;
+    mouseCursor.y += e.movementY * 0.5;
+    mouseCursor.x = Math.min(viewport.width*0.5 / worldScale, Math.max(-viewport.width*0.5 / worldScale, mouseCursor.x));
+    mouseCursor.y = Math.min(viewport.height*0.5 / worldScale, Math.max(-viewport.height*0.5 / worldScale, mouseCursor.y));
     mouseCursor.lastMove = lastTimestamp;
-    mousedir = new Vector(e.movementX, e.movementY)
+    mousedir = new Vector(e.movementX * 0.5, e.movementY * 0.5)
     cursorPos = new Vector(mouseCursor.x, mouseCursor.y)
     cursorPos = cursorPos.scaleBy(Math.min(1,spideyRadius / cursorPos.length()))
     //console.log(e)
@@ -642,7 +725,7 @@ CanvasRenderingContext2D.prototype.strokeCircle = function (x,y,r) {
 }
 //draw halfcircle function
 CanvasRenderingContext2D.prototype.strokeHalfCircle = function (x,y,r) {
-    this.beginPath();
+    //this.beginPath();
     this.arc (x,y,r,Math.PI,2*Math.PI);
     this.stroke();
 }
@@ -745,6 +828,12 @@ const enemies = [];
 const flying = 0;
 const stuck = 1;
 const dead = 2;
+const tethered = 3;
+const wrapped = 4; //maybe replace with a generic item that takes enemy size 
+
+//projectiles/phys objs
+
+const projectiles = [];
 
 //sene objects
 const scnObj = [];
@@ -766,6 +855,7 @@ const boundaryCorners = [topLeft, topRight, bottomRight, bottomLeft];
 const barrierColliders = [];
 const boundaryColliders = [];
 const webArray = [];
+const groundHeight = 200;
 
 const boundaryCircles = [];
 const areaCircles = [];
@@ -777,7 +867,7 @@ function addBoundaries() {
     
     boundaryColliders.push({p1: bottomRight, p2: bottomLeft, solid: true});
     //console.log('start')
-    // for (i=0; i<boundaryCorners.length; i++) {
+    // for (let i=0; i<boundaryCorners.length; i++) {
     //     const p1 = boundaryCorners[i];
     //     const p2 = boundaryCorners[(i + 1) % 4];
     //     boundaryColliders.push({p1, p2, solid: true});
@@ -789,44 +879,44 @@ function addBoundaries() {
 // ground
 const id = areaBoxes.length;
 scnObj.push({id: id, type: ground, length: 1});
-areaBoxes.push({p1: {x: 0, y: worldSize.height}, p2: {x: worldSize.width, y: worldSize.height - 60}});
-boundaryColliders.push({p1: {x: 0, y: worldSize.height-60},p2: {x: worldSize.width, y: worldSize.height - 60}, solid: false});
+areaBoxes.push({p1: {x: 0, y: worldSize.height}, p2: {x: worldSize.width, y: worldSize.height - groundHeight}});
+boundaryColliders.push({p1: {x: 0, y: worldSize.height - groundHeight},p2: {x: worldSize.width, y: worldSize.height - groundHeight}, solid: false});
 
 
 //fill da screen by width
 // 15360px
 // every ~300 px or so
-for(let i=1999;i<worldSize.width+333;i+=300){
+for(let i=333;i<worldSize.width+333;i+=300){
     const type = Math.random();
-    const scale = 0.25 + Math.random();
-    const ground = worldSize.height - 50;
+    const scale = 0.25 + 2 * Math.random();
+    const ground = worldSize.height - groundHeight + 15;
     const height = ground - worldSize.height * Math.random() + 15;
     //console.log(type)
-    enemies.push({type: 0, x: i, y: height, start: 1000 *  Math.random(), dx: i, dy: height, active: true, anim: flying});
+    //enemies.push({type: 0, x: i, y: height, start: 1000 *  Math.random(), dx: i, dy: height, active: true, anim: flying});
     if (type < 0.25){
             
         } else if (type < 0.15) {
             i+=80 * scale;
-            drawRockMed(i, ground + 30 * Math.random(), -scale, true);
+            drawRockMed(i, ground + 160 * Math.random(), -scale, true);
             //drawRockMed(i, ground, scale);
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
         } else if (type < 0.75) {
             i+=40;
-            drawCactus(i, ground + 20 * Math.random(), 1);
+            drawCactus(i, ground + 150 * Math.random(), 1);
             i+=40;
         } else if (type < 0.95) {
             i+=300;
-            drawTree(i, ground + 25, 15 + (85 * Math.random()), 1 + (Math.floor(7 * Math.random())), 20*Math.random()-10);
+            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(8 * Math.random())), 40*Math.random()-20);
             i+=300;
         } else {
-            drawStopSign(i, ground, 1.2);
+            drawStopSign(i, ground + 40 * Math.random(), 1.2);
         }
     }
     console.log("enemies:", enemies.length, "objs:", scnObj.length, "boundaries:", boundaryColliders.length, boundaryCircles.length, "areas:", areaBoxes.length, areaCircles.length)
 
 
-drawTree(666, worldSize.height - 25, 15 + (85 * Math.random()), 1 + Math.floor(7 * Math.random()), 20*Math.random()-10);
+//drawTree(666, worldSize.height - 25, 15 + (85 * Math.random()), 1 + Math.floor(7 * Math.random()), 40*Math.random()-20);
     // boundaryCircles.push({x: 300, y: 600, r: 120, half: false, solid: false});
     // areaCircles.push({x: 300, y: 600, r: 120});
 
@@ -854,8 +944,10 @@ function paintGround(id, length){
     //dusk-y FFC9D6 FFF3E5
     // sky.addColorStop(0, "#FFC9D6");
     // sky.addColorStop(0.5, "#FFF3E5");
-    sky.addColorStop(0, "#0252FF");
-    sky.addColorStop(0.5, "#93CBFF");
+    
+    sky.addColorStop(0, "#001749");
+    sky.addColorStop(0.75, "#0252FF");
+    sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
 
     // Fill with gradient
     bgctx.fillStyle = sky;
@@ -878,17 +970,31 @@ function paintGround(id, length){
     
     const chunkW = worldSize.width / 1920;
     //bgctx.fillStyle = "#FFE57F";
-    //grd
-    let hill = bgctx.createLinearGradient(0, box.p2.y * 0.95, 0, worldSize.height)
-    hill.addColorStop(0, "#FFF3C9");
-    hill.addColorStop(1, "#FFE57F");
-    bgctx.fillStyle = hill;
-    bgctx.fillRect(box.p1.x, box.p2.y, box.p2.x, box.p1.y);
+    //distant terrain
+    let far = bgctx.createLinearGradient(0, box.p2.y - 300, 0, worldSize.height-200)
+    far.addColorStop(0, "#FF5947");
+    far.addColorStop(1, "#FFC647");
+    bgctx.fillStyle = far;
+    bgctx.fillRect(box.p1.x, box.p2.y-31, box.p2.x, box.p1.y-31);
     for(let i=0;i<chunkW;i++){
         const random = mulberry32(i + id + length)();
         bgctx.beginPath();
-        bgctx.moveTo(box.p1.x + (1920*i), box.p2.y)
-        bgctx.bezierCurveTo((1920*i)+ 1920 * random, box.p2.y - (80*random), (1920*i) + 1920 * random, worldSize.height - (80 * random), (1920*i)+1920, worldSize.height)
+        bgctx.moveTo(box.p1.x + (1920*i) - 960, box.p2.y-30)
+        bgctx.bezierCurveTo((1920*i)+ 1920 * random, box.p2.y - (200 * random), (1920*i) + 1920 * random, worldSize.height - (250 * random), (1920*i)+1920, box.p2.y-30)
+        bgctx.fill();
+    }
+
+    //sand
+    let hill = bgctx.createLinearGradient(0, box.p2.y * 0.95, 0, worldSize.height)
+    hill.addColorStop(0, "#FFF3C9");
+    hill.addColorStop(1, "#FFBE6B");
+    bgctx.fillStyle = hill;
+    bgctx.fillRect(box.p1.x, box.p2.y-15, box.p2.x, box.p1.y-15);
+    for(let i=0;i<chunkW;i++){
+        const random = mulberry32(i + id + length)();
+        bgctx.beginPath();
+        bgctx.moveTo(box.p1.x + (1920*i), box.p2.y-15)
+        bgctx.bezierCurveTo((1920*i)+ 1920 * random, box.p2.y - (180*random), (1920*i) + 1920 * random, worldSize.height - (180 * random), (1920*i)+1920, worldSize.height-15)
         bgctx.fill();
     }
     
@@ -1035,6 +1141,12 @@ function paintStopSign(id, len){
     bgctx.fillStyle = "#000000";
 }
 
+function rotate_point(cx, cy, angle, p){
+
+    return {x:(Math.cos(angle) * (p.x - cx) - Math.sin(angle) * (p.y - cy) + cx),
+                 y: (Math.sin(angle) * (p.x - cx) + Math.cos(angle) * (p.y - cy) + cy)};
+}
+
 //let's draw a tree???
 /*
                     *****
@@ -1059,12 +1171,6 @@ function paintStopSign(id, len){
 // up to 3 subsection
 // d o n e 
 
-function rotate_point(cx, cy, angle, p){
-
-    return {x:(Math.cos(angle) * (p.x - cx) - Math.sin(angle) * (p.y - cy) + cx),
-                 y: (Math.sin(angle) * (p.x - cx) + Math.cos(angle) * (p.y - cy) + cy)};
-}
-
 function drawTree(x, y, s, seg, ang){
     //const rseed = 100 * Math.random();
     const left =  x - (s*0.5)
@@ -1083,16 +1189,16 @@ function drawTree(x, y, s, seg, ang){
     //boundaryColliders.push({p1: {x: left, y: y}, p2: {x: left, y: height}, solid: false}); 
 
     let len = 0;
-    let angAr = [];
-    const rlength = s*2 + ((s*seg) * Math.random());
+    //let angAr = [];
     //left
     for(let k=0;k<=seg;k++){
+        const rlength = s + s + seg +((s*4) * Math.random());
         const ang2 = (20 * Math.random()) - 10;
         const ang2R = toRadians(ang2);
-        angAr.push(ang2R);
+        //angAr.push(ang2R);
         const sx = k === 0 ? left : boundaryColliders[boundaryColliders.length - 1].p2.x;
         const sy = k === 0 ? y : boundaryColliders[boundaryColliders.length - 1].p2.y;
-        const prot = rotate_point(x, y, ang2R, {x: sx, y: sy - rlength - 0.5})
+        const prot = rotate_point(x, y, ang2R, {x: sx, y: sy - rlength})
         boundaryColliders.push({p1: {x: sx, y: sy+0.5}, p2: {...prot}, solid: false});
         len += 1;
     };
@@ -1115,11 +1221,11 @@ function drawTree(x, y, s, seg, ang){
         // if(j===seg) {
         //     prot.y = y
         // };
-        boundaryColliders.push({p1: {x: sx, y: sy-0.5}, p2: {x: dsx + s, y: dsy+0.5}, solid: false});
+        boundaryColliders.push({p1: {x: sx, y: sy-0.5}, p2: {x: dsx + s + (j*2), y: dsy+0.5}, solid: false});
 
         //area collision for big tree only
         if(s > spideyRadius/2){
-            areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: dsx + s, y: dsy}})
+            areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: dsx + s + (j*2), y: dsy}})
         } 
         
         len += 1;
@@ -1171,30 +1277,34 @@ function drawTree(x, y, s, seg, ang){
 
     //draw branches
         for(let m=0, count=seg, lid=id;m<count;m++){
-            if (count-1-m > 0 && s > 6){
+            if (count-m >= 0 && s > 10){
                 const cur = boundaryColliders[lid + m];
-                const rotL = 60 + (40 * Math.random() - 20); //+ (180 * Math.random());
-                const rotR = -60 + (40 * Math.random() - 20);
+                const rotL = 50 + (20 * Math.random() - 10); //+ (180 * Math.random());
+                const rotR = -50 - (20 * Math.random() - 10);
                 const prot1 = rotate_point(x, y, -angR, {...cur.p2});
                 //const prot2 =  cur.p2);
                 //console.log("ID:", id, "Seg:", seg, "Loop:", m)
-                if(Math.random() > 0.5){
-                    const prot2 = rotate_point(x, y, angR, {x: prot1.x + (s*0.25), y: prot1.y});
+                if(Math.random() > 0.25){
+                    const prot2 = rotate_point(x, y, angR, {x: prot1.x + (s*0.20) + m, y: prot1.y});
                     //console.log("tree", prot2.x, prot2.y, s*0.5, count-1-m, rotR + ang)
-                    drawTree(prot2.x, prot2.y, s*0.5,  count-1-m,  rotR + ang);
+                    if (prot2.y < worldSize.height - groundHeight) {
+                        drawTree(prot2.x, prot2.y, (s - count)*0.5,  count - 1 - m,  rotR + ang);
+                    }
                 }
-                if(Math.random() > 0.5){
-                const prot3 = rotate_point(x, y, angR, {x: prot1.x + (s*0.75), y: prot1.y});
+                if(Math.random() > 0.25){
+                const prot3 = rotate_point(x, y, angR, {x: prot1.x + (s*0.80) - m, y: prot1.y});
                     //console.log("tree", prot3.x, prot3.y, s*0.5, Math.max(1, seg-m), rotL + ang)
-                drawTree(prot3.x, prot3.y, s*0.5, count-1-m, rotL + ang);
+                    if (prot3.y < worldSize.height - groundHeight) {
+                        drawTree(prot3.x, prot3.y, (s - count)*0.5, count - m, rotL + ang);
+                    }
                 }    
                 }
             }
 }
 
 function paintTree(id, len){
-    bgctx.fillStyle = "#593418"; 
-    bgctx.strokeStyle = "#3D200F";
+    bgctx.fillStyle = "#563B27"; 
+    bgctx.strokeStyle = "#3A2B22";
     bgctx.lineWidth = 2.1;
 
     bgctx.beginPath();
@@ -1218,6 +1328,17 @@ function paintTree(id, len){
     //bgctx.setLineDash([15, 10, 5, 10]);
     bgctx.stroke();
     //bgctx.setLineDash([]);
+
+    //roots
+    // bgctx.beginPath();
+    // bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
+    // bgctx.lineTo(boundaryColliders[id].p1.x - 60, boundaryColliders[id].p1.y + 60);
+    // bgctx.stroke();
+    
+    // bgctx.beginPath();
+    // bgctx.moveTo(boundaryColliders[id+len-1].p1.x, boundaryColliders[id+len-1].p1.y);
+    // bgctx.lineTo(boundaryColliders[id+len-1].p1.x + 60, boundaryColliders[id+len-1].p1.y + 60);
+    // bgctx.stroke();
 
 }
 
@@ -1324,6 +1445,7 @@ function paintTree(id, len){
     function paintCactus(id, len, cid, clen){
         bgctx.fillStyle = "#7FD87F"; //EAFFEB D6FFD6
         bgctx.strokeStyle = "#539B58";
+        bgctx.lineCap = "round";
         bgctx.lineWidth = 3;
 
         let width = boundaryCircles[cid].r;
@@ -1354,13 +1476,15 @@ function paintTree(id, len){
             const obj = boundaryColliders[i]
                 bgctx.moveTo(obj.p1.x, obj.p1.y);
                 bgctx.lineTo(obj.p2.x, obj.p2.y);
+                bgctx.stroke();
             }
         //bgctx.setLineDash([15, 10, 5, 10]);
-        bgctx.stroke()
         for(let i = cid; i < cid + clen; i++){
             const obj = boundaryCircles[i];
             
-            bgctx.strokeHalfCircle(obj.x, obj.y, obj.r)
+            bgctx.moveTo(obj.x - obj.r, obj.y);
+            bgctx.arc(obj.x, obj.y, obj.r,Math.PI,2*Math.PI);
+            bgctx.stroke();
         }
 
         //needles
@@ -1372,11 +1496,11 @@ function paintTree(id, len){
         bgctx.stroke();
         bgctx.beginPath();
         bgctx.moveTo(middle, top)
-        bgctx.quadraticCurveTo(middle + width, top - width, middle + width*0.5, bottom)
+        bgctx.quadraticCurveTo(middle + width, top - width*0.5, middle + width*0.5, bottom)
         bgctx.stroke();
         bgctx.beginPath();
         bgctx.moveTo(middle, top)
-        bgctx.quadraticCurveTo(middle - width, top - width, middle - width*0.5, bottom)
+        bgctx.quadraticCurveTo(middle - width, top - width*0.5, middle - width*0.5, bottom)
         bgctx.stroke();
         
         //right arm
@@ -1464,7 +1588,7 @@ function paintTree(id, len){
 
 var fliesEaten = 0;
 //lets make a spidey boi
-var spideyPos = {x: 60, y: worldSize.height - 60};
+var spideyPos = {x: viewport.width*0.5, y: worldSize.height - 190}; // ??? This has to intersect w/ a collision?
 //'natural' leg values for anchor + neutral position
 var spideyLegs = [
     //Left leggies
@@ -1478,7 +1602,6 @@ var spideyLegs = [
     {x: 31, y: 21},
     {x: 25, y: 22}
 ]
-
 
 //large spread/reaching up legs for jumpin anim
 var spideyJump = [
@@ -1516,18 +1639,30 @@ var spideyJump = [
 */
 var legOrigins = [
     //Left leggies
-    {x: -7, y: -2},
-    {x: -7, y: -1},
-    {x: -7, y: 1},
-    {x: -7, y: 2},
+    {x: -4, y: -2},
+    {x: -4, y: -1},
+    {x: -6, y: 0},
+    {x: -5, y: 1},
     //Right leggies
-    {x: 7, y: -2},
-    {x: 7, y: -1},
-    {x: 7, y: 1},
-    {x: 7, y: 2},
+    {x: 4, y: -2},
+    {x: 4, y: -1},
+    {x: 6, y: 0},
+    {x: 5, y: 1},
 ]
 
 
+// spideyLegs.forEach((x) => {
+//     x.x *= 1.5;
+//     x.y *= 1.5;
+// })
+// legOrigins.forEach((x) => {
+//     x.x *= 0.2;
+//     x.y *= 0.2;
+// })
+// spideyJump.forEach((x) => {
+//     x.x *= 0.2;
+//     x.y *= 0.2;
+// })
 //variable leg offsets for animation - offset from spideyLeg defaults
 
 
@@ -1563,32 +1698,32 @@ var legMods = [
 //16 lines (32 pts) relative to spideypos within radius
 //valid for spidey feetsies
 var walkLines = [
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
 
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
 
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
 
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
-    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
+    {p1: {x: 0, y: 0}, p2: {x: 0, y: 0}, valid: false, webID: -1},
 
 ]
 
 const audioCtx = new AudioContext;
 
 
-// Create attack and release functions.
+// Create sound attack and release functions.
 const attack = (type, frequency, attackTime, decayTime, sustainValue, releaseTime, volume) => {
   const o = audioCtx.createOscillator();
   const g = audioCtx.createGain();
@@ -1601,20 +1736,76 @@ const attack = (type, frequency, attackTime, decayTime, sustainValue, releaseTim
 
   g.gain.setValueAtTime(0, audioCtx.currentTime);
   g.gain.linearRampToValueAtTime(1 * volume,
-                          audioCtx.currentTime + attackTime);
+                        audioCtx.currentTime + attackTime);
   g.gain.linearRampToValueAtTime(sustainValue * volume,
-                          audioCtx.currentTime + attackTime + decayTime);
+                        audioCtx.currentTime + attackTime + decayTime);
 
     //release
     g.gain.linearRampToValueAtTime(0, audioCtx.currentTime + releaseTime);
     o.stop(audioCtx.currentTime + releaseTime);
 
 };
-
 // const release = (audioCtx, oscillatorGain, releaseTime) => {
 //     //oscillatorGain.gain.cancelScheduledValues(audioCtx.currentTime)
 //     oscillatorGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + releaseTime);
 // };
+
+
+//this returns the webID (or -1) thus only truey/falsey
+function checkWebCollision(tx, ty, r){
+    let hitLine = -1;
+    webArray.forEach((y, i) => {
+        if (doesLineInterceptCircle(y.p1, y.p2, {x:tx,y:ty}, r)) {
+            hitLine = i;
+        };
+    })
+    return hitLine;
+};
+
+function checkCollision(tx, ty, r){
+    //walkAreas
+    let collision = false;
+    areaCircles.forEach((x) => {
+        //if (collision) return;
+        const intersect = intersection({x: tx, 
+            y: ty, r: r}, x)
+            //console.log(intersect)
+            if (intersect.one_is_in_other){
+                collision = true;
+            }
+    });
+    //if (collision) return;
+
+    areaBoxes.forEach((x) => { 
+        //if (collision) return;
+        if(tx >= x.p1.x - 1
+            && tx <= x.p2.x + 1
+            && ty <= x.p1.y + 1
+            && ty >= x.p2.y - 1){
+            if(x.p3){
+                if(
+                pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
+                || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                ) {
+                    collision = true;
+                }
+            } else {
+                collision = true;
+            }
+        }}
+    );
+    boundaryCircles.forEach((x) => {
+        const circRadius = x.r;
+        const circPos = {x: x.x, y: x.y};
+        const hits = intersection({x: tx, y: ty, r: r}, {...circPos, r: circRadius});
+        if (hits > 0) collision = true;
+    });
+    //lines 
+    boundaryColliders.forEach((x) => {
+        if(doesLineInterceptCircle(x.p1, x.p2, {x: tx, y: ty}, r)) collision = true;
+    });
+    return collision;
+}
 
 function footStep(i, vol){
     const type = "sine";
@@ -1664,47 +1855,46 @@ function fallSFX(i){
 //if nearest is inside r/2 animate it 1x 2y
 function spideyMove(leg) {
     
+    const rotate = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)+20), {x: spideyLegs[leg].x, y: spideyLegs[leg].y})
+    rotate.y = yrotation >= 0? rotate.y : -rotate.y;
     //x and y offset in relation to spidey
     if (legMods[leg].anim === grabbing) {
-        const pos = {};
-        pos.x = 0;
-        pos.y = 0;
         const x = (spideyLegs[leg].x + legMods[leg].x);
         const y = (spideyLegs[leg].y + legMods[leg].y);
-        
-         const dist = Math.sqrt(x * x + y * y);
-        if (dist < spideyRadius && dist > (spideyRadius / 3)) {
-        } else {
-            legMods[leg].anim = walking;
-            legMods[leg].start = lastTimestamp;
-            legMods[leg].dx = pos.x;
-            legMods[leg].dy = pos.y;
+        if (jactive){
+            context.fillStyle = "#ff0000";
+            context.fillCircle(spideyPos.x+rotate.x, spideyPos.y+rotate.y, 3)
+            context.fillStyle = "#000000";
         }
         
-            //console.log(pos);
-         if (Math.abs(speed.components[0]) > Math.abs(speed.components[1]) && Math.sign(x) !== Math.sign(spideyLegs[leg].x)
-            || Math.abs(speed.components[1]) > Math.abs(speed.components[0]) && Math.abs(y) <= 1) {
-            //if the leg crosses spidey's x axis reset it
+
+         const dist = Math.sqrt(x * x + y * y);
+        if (dist < spideyRadius && dist > (spideyRadius / 3)){}
+        else if(Math.abs(speed.components[0]) > EPSILON
+            || Math.abs(speed.components[1]) > EPSILON){
+            //console.log("Moving");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
+            // legMods[leg].x = legMods[leg].jx;
+            // legMods[leg].y = legMods[leg].jy;
             legMods[leg].dx = 0;
             legMods[leg].dy = 0;
         }
         
-        // const dlen = Math.hypot(legMods[leg].dx + spideyLegs[leg].x, legMods[leg].dy + spideyLegs[leg].y)
-        // if(dlen > spideyRadius){
-        //     console.log("dlen",dlen)
-        //     legMods[leg].dx -= (copySign(2 + dlen - spideyRadius, legMods[leg].dx));
-        //     legMods[leg].dy -= (copySign(2 + dlen - spideyRadius, legMods[leg].dy));
-            //console.log("new",Math.hypot(legMods[leg].dx + spideyLegs[leg].x, legMods[leg].dy + spideyLegs[leg].y))
-        // }
+        if ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x) || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y)))
+        || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y)))) {
+            //if the leg crosses spidey's x axis reset it
+            //console.log("Crossing");
+            legMods[leg].anim = walking;
+            legMods[leg].start = lastTimestamp;
+            // legMods[leg].x = legMods[leg].jx;
+            // legMods[leg].y = legMods[leg].jy;
+            legMods[leg].dx = rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = rotate.y - spideyLegs[leg].y;
+        }
+        
     }
 
-    //adjust y pos of all legs 
-    //if y difference is +- Radius/2 = scale y +- 1.0
-    //y anchor set by dy * -2.5 ... 0 ... 2.5
-    //mods Y value + legY value (y dist from spidey) / (spideyRadius / 2)
-    //
     
         //enforce destination to valid grab point
         //always runs for now
@@ -1713,8 +1903,8 @@ function spideyMove(leg) {
         //const line = getNearestWalkLine()
     
         let walkArea = false;
-        const legPosX =  spideyLegs[leg].x + spideyPos.x;
-        const legPosY =  spideyLegs[leg].y + spideyPos.y;
+        const legPosX =  legMods[leg].dx + spideyLegs[leg].x + spideyPos.x;
+        const legPosY =  legMods[leg].dy + spideyLegs[leg].y + spideyPos.y;
         //walkAreas
         areaCircles.forEach((x) => {
             const intersect = intersection({x: legPosX, 
@@ -1724,6 +1914,7 @@ function spideyMove(leg) {
                     walkArea = true; 
                 }
         });
+    if (!walkArea){
         areaBoxes.forEach((x) => { 
             if(legPosX >= x.p1.x - 1
                 && legPosX <= x.p2.x + 1
@@ -1734,7 +1925,7 @@ function spideyMove(leg) {
                     pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p6, x.p3)
                     || pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p6, x.p4)
                     ) {
-                        console.log("Spideymove triangle");
+                        //console.log("Spideymove triangle");
                         walkArea = true;
                     }
                 } else {
@@ -1742,14 +1933,14 @@ function spideyMove(leg) {
                 }
             }}
         );
-
+    }
         let nearest = 9999999;
         let line = -1;
         if(!walkArea){
             for(let i=0; i<walkLines.length; i++){
                 if (walkLines[i].valid) {
-                const dist = distToSegmentSquared({x: spideyLegs[leg].x, 
-                    y: spideyLegs[leg].y},
+                const dist = distToSegmentSquared({x: rotate.x, 
+                    y: rotate.y},
                     walkLines[i].p1, walkLines[i].p2)
                         //if (line >= 0) console.log("Closest:", line, dist)
                     if (dist < nearest) {
@@ -1761,7 +1952,7 @@ function spideyMove(leg) {
         }
         
         //landing on within walkable areas
-        if(walkArea && (legMods[leg].anim === none || legMods[leg].anim === jumping) && !spacePressed) {
+        if(walkArea && (legMods[leg].anim === none || (legMods[leg].anim === jumping && lastTimestamp - legMods[leg].start > 600)) && !spacePressed && !shiftPressed) {
             legMods[leg].anim = grabbing;
             legMods[leg].start = 0;
             legMods[leg].x = legMods[leg].jx;
@@ -1772,35 +1963,37 @@ function spideyMove(leg) {
             //console.log("LEG:", leg, "GRAB:", grab, `LINE: ${line}`, walkLines[line])
             //context.fillCircle(grab.x + spideyPos.x, grab.y + spideyPos.y, 2);
             if (legMods[leg].anim === walking) {
-            const grab = closestSegmentPoint({x: spideyLegs[leg].x, 
-            y: spideyLegs[leg].y}, 
-            {x: walkLines[line].p1.x, y: walkLines[line].p1.y}, 
-            {x: walkLines[line].p2.x, y: walkLines[line].p2.y}, 
-            )
-            if(Math.abs(legMods[leg].dx - (grab.x - spideyLegs[leg].x)) > 33
-            || Math.abs(legMods[leg].dy - (grab.y - spideyLegs[leg].y)) > 33){
-            //console.log("recalculate");
-            legMods[leg].x = legMods[leg].jx;
-            legMods[leg].y = legMods[leg].jy;
-            legMods[leg].start = lastTimestamp;
-            }
-            
-            legMods[leg].dx = grab.x - spideyLegs[leg].x;
-            legMods[leg].dy = grab.y - spideyLegs[leg].y;
+                    const grab = closestSegmentPoint({x: rotate.x, 
+                    y: rotate.y}, 
+                    {x: walkLines[line].p1.x, y: walkLines[line].p1.y}, 
+                    {x: walkLines[line].p2.x, y: walkLines[line].p2.y}, 
+                    )
+                    
+
+                if(Math.abs(legMods[leg].dx - (grab.x - spideyLegs[leg].x)) > spideyRadius/3
+                || Math.abs(legMods[leg].dy - (grab.y - spideyLegs[leg].y)) > spideyRadius/3){
+                    //console.log("recalculate");
+                    legMods[leg].x = legMods[leg].jx;
+                    legMods[leg].y = legMods[leg].jy;
+                    if (legMods[leg].start !== lastTimestamp) legMods[leg].start = lastTimestamp-0.1
+                }
+                
+                legMods[leg].dx =  grab.x - spideyLegs[leg].x;
+                legMods[leg].dy =  grab.y - spideyLegs[leg].y;
             }
 
-            if((legMods[leg].anim === none || legMods[leg].anim === jumping) && !spacePressed) {
+            if((legMods[leg].anim === none || (legMods[leg].anim === jumping && lastTimestamp - legMods[leg].start > 600)) && !spacePressed && !shiftPressed) {
                 const land = distToSegmentSquared({x: legMods[leg].x + spideyLegs[leg].x, 
                     y: legMods[leg].y + spideyLegs[leg].y}, 
                     {x: walkLines[line].p1.x, y: walkLines[line].p1.y}, 
                     {x: walkLines[line].p2.x, y: walkLines[line].p2.y}, 
                     )
                     //console.log(land, grab)
-                    if(land < 10) {
-                        // legMods[leg].x = legMods[leg].dx;
-                        // legMods[leg].y = legMods[leg].dy;
-                        // legMods[leg].dx = land.x - spideyLegs[leg].x;
-                        // legMods[leg].dy = land.y - spideyLegs[leg].y;
+                    if(land < (10 * deltaTime)) {
+                        legMods[leg].x = legMods[leg].jx;
+                        legMods[leg].y = legMods[leg].jy;
+                        legMods[leg].dx = land.x - spideyLegs[leg].x;
+                        legMods[leg].dy = land.y - spideyLegs[leg].y;
                         legMods[leg].anim = grabbing;
                         legMods[leg].start = 0;
                         footStepLand(leg);
@@ -1824,6 +2017,13 @@ function spideyMove(leg) {
             // legMods[leg].x = 0;
             // legMods[leg].y = -15;
         }
+        // const stretch = spideyRadius + 3;
+        // legMods[leg].x = doubleClamp(legMods[leg].x, -stretch, stretch);
+        // legMods[leg].y = doubleClamp(legMods[leg].y, -stretch, stretch);
+        // legMods[leg].dx = doubleClamp(legMods[leg].dx, -stretch, stretch);
+        // legMods[leg].dy = doubleClamp(legMods[leg].dy, -stretch, stretch);
+        // legMods[leg].jx = doubleClamp(legMods[leg].jx, -stretch, stretch);
+        // legMods[leg].jy = doubleClamp(legMods[leg].jy, -stretch, stretch);
     
 }
 
@@ -1868,24 +2068,410 @@ function spideyCollider() {
     }
 }
 
+function easeInBack(x) {
+    const c1 = 1.70158;
+    const c3 = c1 + 1;
+    
+    return c3 * x * x * x - c1 * x * x;
+    }
 function smoothstep(x) {
     return x = (x * x * (3-2 * x))
 }
 function degs_to_rads (degs) { return degs / (180/Math.PI); }
 function rads_to_degs (rads) { return rads * (180/Math.PI); }
 
+
+function drawBugLeg(root, dest, l1, lw, fx, fy, dang){
+    let dirx = dest.x - root.x;
+    let diry = dest.y - root.y;
+    let len = Math.sqrt(dirx * dirx + diry * diry);
+    dirx = dirx / len;
+    diry = diry / len;
+
+    let joint1x, joint1y;
+    var dist = l1 * l1 - len * len / 4;
+    if(dist < 0){
+        joint1x = root.x + dirx * l1;
+        joint1y = root.y + diry * l1;
+        dest.x = root.x + dirx * l1 * 2;
+        dest.y = root.y + diry * l1 * 2;
+    } else {
+        joint1x = root.x + dirx * len / 2;
+        joint1y = root.y + diry * len / 2;
+        dist = Math.sqrt(dist);
+        if(dang < 0){
+            dist = -dist; 
+        }
+        joint1x -= diry * dist;
+        joint1y += dirx * dist;
+    }
+    context.lineCap = "round";
+    context.lineWidth = lw;
+    context.beginPath();
+    context.moveTo(root.x, root.y);
+    context.lineTo(joint1x, joint1y);
+    context.stroke();
+    //context.lineCap = "butt";
+    context.beginPath();
+    context.moveTo(joint1x, joint1y);
+    context.lineTo(dest.x, dest.y);
+    context.lineWidth = lw-1;
+    context.stroke();
+    context.beginPath();
+    context.moveTo(dest.x, dest.y);
+    context.quadraticCurveTo(
+        dest.x - fx*2, dest.y - fy,
+        dest.x - fx, dest.y - fy
+    );
+    context.lineWidth = lw-2;
+    context.stroke();
+
+}
+
+
+//lets draw a ladybug 
+//and test out a rotation system for bug 
+//  ,,-c`"""-,
+//  CMb___o_·_;
+//  ''  ''  ''
+const ladybugLegs = [
+    //right leggies
+    {x: -12, y: 20},
+    {x: 2, y: 20},
+    {x: 22, y: 20},
+    //left leggies
+    {x: -11, y: 20},
+    {x: 7, y: 20},
+    {x: 12, y: 20},
+]
+function drawLadybug(bug) {
+    bug.x += 0.2*deltaTime
+    let x = bug.x;
+    let y = bug.y;
+    const start = bug.start;
+    const anim = bug.anim;
+    const bugR = 50
+    
+    //backlegs
+    context.fillStyle = "#111111";
+    context.strokeStyle = "#000000";
+    context.lineWidth = 1.5;
+    let step = lastTimestamp%2000/500;
+    console.log("STEP", step)
+    let walk = 0;
+    if(step > 3) {
+        step = 4-step;    
+        walk = 1;
+    }else if (step>2) {
+        step = step-2;
+        walk = 1;
+    }else if (step>1) {
+        step = 2-step;
+        walk = 0;
+    }
+
+    for(let l=0;l<6;l++){
+        const lift = l%2===walk? 0: -bugR*0.2*step;
+        bug.lmods[l].x += lift !== 0? 0.2*deltaTime : -0.2*deltaTime;
+        const lx = ladybugLegs[l].x+bug.lmods[l].x;
+        const ly = ladybugLegs[l].y+bug.lmods[l].y+lift;
+        const k = l%3;
+        const dir = l>=3? 1 : -1;
+        const foot = (6)* dir;
+        drawBugLeg(
+            {x:x + (10*k),y:y-2},
+            {x:x+lx, y: y+ly-(5*dir)},
+            bugR*0.33+(3-k),
+            3.5,
+            foot,-2,
+            dir)
+    }
+    // //L
+    // //back
+    // drawBugLeg({x:x-15,y:y-10},{x:x-19+5*step,y:y+10+5*(1-step)},bugR-2,3.5,-6,-2,-1)
+    // //mid
+    // drawBugLeg({x:x,y:y-10},{x:x-5*step,y:y+10+5*step},bugR-2,3.5,-6,-3,-1)
+    // //front
+    // drawBugLeg({x:x+25,y:y-10},{x:x+15+10*step,y:y+10+5*(1-step)},bugR-2,3.5,-4,-2,-1)
+    // //R
+    // //back
+    //  drawBugLeg({x:x-15,y:y},{x:x-19+5*step,y:y+15+5*step},bugR,3.5,6,-2,1)
+    //  //mid
+    //  drawBugLeg({x:x,y:y},{x:x-5*step,y:y+15+10*(1-step)},bugR,3.5,6,-3,1)
+    //  //front
+    //  drawBugLeg({x:x+25,y:y},{x:x+15+10*(1-step),y:y+15+5*step},bugR,3.5,4,-2,1)
+    // context.beginPath();
+    // context.ellipse(x-12, y+6, 16, 2, Math.PI / 1.1, 0, 2 * Math.PI);
+    // context.stroke();
+    // context.fill();
+    // context.beginPath();
+    // context.ellipse(x-27, y+19, 1, 9, -Math.PI, 0, Math.PI);
+    // context.stroke();
+    // context.fill();
+    // context.beginPath();
+    // context.bezierCurveTo(
+    //     x-27, y+18,
+    //     x-27, y+24,
+    //     x-33, y+24,
+    // );
+    // //forelegs
+    // for(i=0;i<2;i++){    
+    //     context.stroke();
+    //     context.fillStyle = "#111111";
+    //     context.lineWidth = 1.5;
+    //     context.beginPath();
+    //     context.ellipse(x + (12*i) + 6, y+6, 16, 2, -Math.PI / 1.1, 0, 2 * Math.PI);
+    //     context.stroke();
+    //     context.fill();
+    //     context.beginPath();
+    //     context.ellipse(x + (12*i) + 20, y+18, 1, 9, Math.PI, 0, Math.PI);
+    //     context.stroke();
+    //     context.fill();
+    //     context.beginPath();
+    //     context.bezierCurveTo(
+    //         x + (12*i) + 20, y+17,
+    //         x + (12*i) + 27, y+24,
+    //         x + (12*i) + 31, y+21,
+    //     );
+    //     context.stroke();
+
+    //}
+    
+    
+    //body
+    context.fillStyle = "#ff1111";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.ellipse(x, y, 30, 28, 0, -Math.PI, 0);
+    context.ellipse(x, y, 30, 10, 0, 0, -Math.PI);
+    context.stroke();
+    context.fill();
+
+    //spots
+    context.fillStyle = "#111111";
+    context.beginPath();
+    context.ellipse(x+12, y-3, 4, 6, 1.2, 2 * Math.PI, 0);
+    context.stroke();
+    context.fill();
+    context.beginPath();
+    context.ellipse(x, y-24, 6, 4, 0, 2 * Math.PI, 0);
+    context.stroke();
+    context.fill();
+    context.beginPath();
+    context.ellipse(x-18, y-6, 5, 6, -1.2, 2 * Math.PI, 0);
+    context.stroke();
+    context.fill();
+
+    //neck
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.ellipse(x+25, y-8, 12, 10, Math.PI / 2.6, -Math.PI, 0);
+    context.ellipse(x+25, y-8, 12, 5, Math.PI / 2.6, 0, -Math.PI);
+    context.stroke();
+    context.fill();
+    //neck spots 
+    context.fillStyle = "#ffffff";
+    context.beginPath();
+    context.ellipse(x+29, y-2, 6, 12, -0.6, -Math.PI, 0);
+    context.ellipse(x+29, y-2, 6, 5, -0.6, 0, -Math.PI);
+    context.stroke();
+    context.fill();
+    //antenna    
+    context.lineWidth = 1.0;
+    context.beginPath();
+    context.moveTo(x+35, y-9);
+    context.lineTo(x+45, y-11);
+    context.stroke();
+    //head
+    context.fillStyle = "#111111";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.ellipse(x+35, y-2, 6, 12, -0.2, -Math.PI, 0);
+    context.ellipse(x+35, y-2, 6, 5, -0.2, 0, -Math.PI);
+    //mouthparts
+    context.moveTo(x+36, y);
+    context.ellipse(x+40, y+5, 2, 2, 0, 0, -Math.PI);
+    context.fill();
+    //eye spots 
+    context.fillStyle = "#ffffff";
+    context.beginPath();
+    context.ellipse(x+40, y-6, 3, 1, 1.3, -Math.PI, 0);
+    context.ellipse(x+40, y-6, 3, 0.5, 1.3, 0, -Math.PI);
+    context.stroke();
+    context.fill();
+
+    //antenna    
+    context.lineWidth = 1.0;
+    context.beginPath();
+    context.moveTo(x+35, y-10);
+    context.lineTo(x+43, y-12);
+    context.stroke();
+
+    if(jactive){
+        context.lineWidth = 1.5;
+        context.strokeStyle = "#ee5555";
+        context.strokeCircle(x,y,bugR)
+    }
+    
+}
+//lets draw an ant
+//           ,, 
+//    </\oÔ:B"  z
+//    // | \    xy
+// 
+//    \ H /
+//   -- T --    y
+//    / A \     zx
+function drawAnt(ant) {
+    let x = ant.x;
+    let y = ant.y;
+    const start = ant.start;
+    const anim = ant.anim;
+    const antR = 12
+    
+    //legs
+    context.fillStyle = "#CB5F00";
+    //context.strokeStyle = "#CB5F00";
+    //context.strokeStyle = "#ffffff";
+    context.fillStyle = "#111111";
+    context.strokeStyle = "#111111";
+    context.lineWidth = 1.5;
+    //shoulders
+    context.beginPath();
+    context.ellipse(x, y+5, 2, 5, Math.PI / 1.4, 0, 2 * Math.PI);
+     context.stroke();
+    context.fill();
+    context.beginPath();
+    context.ellipse(x-7, y+4, 2, 5, Math.PI / 1.1, 0, 2 * Math.PI);
+    context.fill();
+    context.beginPath();
+    context.ellipse(x-16, y+3, 2, 6, Math.PI / 1.4, 0, 2 * Math.PI);
+    context.fill();
+    // //R
+    // //front
+    // drawBugLeg({x:x-10, y:y-4}, {x:x-30, y:y+15}, 15, 3, -4, 1);
+    // //mid
+    // drawBugLeg({x:x-4, y:y-4}, {x:x-5, y:y+12}, 15, 3, -4, 1);
+    // //back
+    // drawBugLeg({x:x+4, y:y-2}, {x:x+25, y:y+14}, 15, -3, -4, -1);
+
+    let step = 1;//lastTimestamp%1000/500;
+    step = step > 1 ? 2 - step : step;
+    //R
+    //front
+    drawBugLeg({x:x-13, y:y}, {x:x-40+8*step, y:y+28+10 * (1-step)}, 28, 3.5, 3, -15, 1);
+    //mid
+    drawBugLeg({x:x-7, y:y}, {x:x-10+8*(1-step), y:y+25+13*(step)}, 28, 3.5, -3, -15, 1);
+    //back
+    drawBugLeg({x:x+4, y:y}, {x:x+20+8*step, y:y+25+9*(1-step)}, 28, 3.5, -3, -15, -1);
+    //L
+    //front
+    drawBugLeg({x:x-13, y:y+7}, {x:x-40+8*(1-step), y:y+(28 * step)}, 28, 3.5, 3, -15, 1);
+    //mid
+    drawBugLeg({x:x-7, y:y+8}, {x:x-10+8*step, y:y+35+13*(1-step)}, 28, 3.5, -3, -15, 1);
+    //back
+    drawBugLeg({x:x+4, y:y+7}, {x:x+20+8*(1-step), y:y+44*step}, 28, 3.5, -3, -15, -1);
+    context.lineWidth = 1.5;
+    //body
+    //context.strokeStyle = "#ffffff";
+    context.beginPath();
+    context.ellipse(x+18, y, 9, 14, Math.PI / 2.6, 0, 2 * Math.PI);
+    context.stroke();
+    context.fill();
+    
+    //thorax
+    context.beginPath();
+    context.ellipse(x-4, y, 4, 12, Math.PI / 1.8, 0, 2 * Math.PI);
+    context.ellipse(x-12, y-2, 5, 8, Math.PI / 1.8, 0, 2 * Math.PI);
+    context.stroke();
+    context.fill();
+
+    //head
+    context.beginPath();
+    context.ellipse(x-28, y-2, 7, 10, Math.PI / 3.8, 0, 2 * Math.PI);
+    context.stroke();
+    context.fill();
+
+    context.strokeStyle = "#111111";
+    //antennae
+    context.lineWidth = 2.5;
+    context.beginPath();
+    context.moveTo(x-28.5, y-9.5);
+    context.lineTo(x-36, y-20);
+    context.stroke();
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(x-35.5, y-20);
+    //context.lineTo(x-51, y-20);
+    context.bezierCurveTo(x-51, y-18,x-51, y-20,x-51, y-20);
+    context.stroke();
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(x-28, y-9);
+    context.lineTo(x-36, y-20);
+    context.stroke();
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(x-35.5, y-20);
+    //context.lineTo(x-51, y-20);
+    context.bezierCurveTo(x-51, y-18,x-51, y-20,x-51, y-20);
+    context.stroke();
+
+    // //legs
+    // for(let i=0; i<3; i++){
+    //     x += i===0? 0 : 10;
+    //     context.strokeStyle = "#CB5F00";
+    //  //shoulder
+    //     context.beginPath();
+    //     context.ellipse(x-16, y+2, 2, 6, Math.PI / 1.3, 0, 2 * Math.PI);
+    //     //upper arm
+    //     context.ellipse(x-18, y+6, 1.5, 6, Math.PI / 1.8, 0, 2 * Math.PI);
+        
+    //     context.stroke();
+    //     context.fill();
+    //     //lower arm
+    //     context.beginPath();
+    //     context.ellipse(x-22, y+11, 1, 6, Math.PI / 1.1, 0, 2 * Math.PI);
+    //     context.stroke();
+    //     context.fill();
+    //     //foot
+    //     context.lineWidth = 2;
+    //     context.beginPath();
+    //     context.moveTo(x-20.5, y+16);
+    //     context.bezierCurveTo(x-18, y + 24, x-18, y+28, x-22, y+33);
+    //     context.stroke();
+    //     context.strokeStyle = "#111111";
+    //     context.lineWidth = 1;
+    //     context.beginPath();
+    //     context.moveTo(x-20.5, y+16);
+    //     context.bezierCurveTo(x-18, y + 24, x-18, y+28, x-22, y+33);
+    //     context.stroke();
+    // }
+   
+    context.lineWidth = 1;
+    context.fillStyle = "#000000"
+    context.strokeStyle = "#000000"
+}
+
+
 //lets draw a fly
 //   (()
 //    O
 //
-function drawFly(x, y, start) {
+function drawFly(fly) {
+
+    let x = fly.x;
+    let y = fly.y;
+    const start = fly.start;
+    const anim = fly.anim;
+
     const flyR = 5
 
-    const sec1 = (Math.abs(lastTimestamp - start))%200/100; //(start + lastTimestamp%200)/100;  
+    const sec1 = anim === flying ? (Math.abs(lastTimestamp - start))%200/100 : 1; //(start + lastTimestamp%200)/100;  
     const sec = sec1 > 1? 2 - sec1 : sec1;
     const step = sec * sec * (3-2 * sec);
 
-    const sec2 = (lastTimestamp%1000)/500; 
+    const sec2 = anim === flying ? (lastTimestamp%1000)/500 : 1; 
     const hover = sec2 > 1? 2 - sec2 : sec2;
     const step2 = hover * hover * (3-2 * hover);
     y += step2*2;
@@ -1946,10 +2532,6 @@ function drawFly(x, y, start) {
     context.stroke();
     context.fill();
 
-    //body
-    context.fillStyle = "#442211"
-    context.fillCircle(x, y, flyR*0.9);
-
     //lil leggies
     context.strokeStyle = "#442211"
     for(let i=0;i<6;i++){
@@ -1962,6 +2544,10 @@ function drawFly(x, y, start) {
         }
         context.stroke();
     }
+    //body
+    context.fillStyle = "#3F2C1B"
+    context.fillCircle(x, y, flyR*0.9);
+
     context.lineWidth = 1;
     context.strokeStyle = "#000000"
 
@@ -1982,6 +2568,15 @@ const rand3 = Math.random();
 let yrotation = 20;
 let xrotation = 0.1;
 
+let prevyrot = [yrotation,0,0,0,
+    yrotation,0,0,0,
+    yrotation,0,0,0,
+    0,0,0,yrotation
+];
+let prevxrot = [xrotation,0,0,0,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation];
 function drawSpidey(x, y) {
 
     //console.log()
@@ -1994,8 +2589,8 @@ function drawSpidey(x, y) {
     yrotation = 20;
     xrotation = 0.1;
     //prevent 0 values
-    let sumx = -0.01;
-    let sumy = -0.01;
+    let sumx = 0;
+    let sumy = 0;
     for(let e=0; e < spideyLegs.length; e++) {
         if(!falling){
             sumy += legMods[e].jy + spideyLegs[e].y;
@@ -2004,7 +2599,16 @@ function drawSpidey(x, y) {
             xrotation = doubleClamp(sumx / 8, -spideyRadius, spideyRadius);
         }
     }
-//console.log(xrotation, yrotation)
+    if (Math.abs(yrotation) >= 0) {
+        prevyrot.shift();
+        prevxrot.shift()
+        prevyrot.push(yrotation);
+        prevxrot.push(xrotation);
+    }
+    yrotation = prevyrot.reduce((acc, cur) => acc + cur) / prevyrot.length;
+    xrotation = prevxrot.reduce((acc, cur) => acc + cur) / prevxrot.length;
+
+//console.log("Rotations",yrotation, xrotation)
     // let box = 0;
     // let boy = 0;
     // if (rightPressed) box = -4;
@@ -2044,6 +2648,9 @@ function drawSpidey(x, y) {
         //formulaaaa
         //console.log("Leg:", i, legMods[i])
 
+        legMods[i].jx = ox;
+        legMods[i].jy = oy;
+        
         const difx = ex - ox;
         const dify = ey - oy;
         // const normx = 1 / difx;
@@ -2056,7 +2663,7 @@ function drawSpidey(x, y) {
         if (legMods[i].anim === jumping || legMods[i].anim === none || legMods[i].anim === swinging ) {
             
         
-            const stepSpeed = 100 + (100 * (Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2)))
+            const stepSpeed = 16 + (500 * (Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2)))
             const sec = Math.min(elapsed/stepSpeed, 1);  
             const step = sec * sec * (3-2 * sec);
 
@@ -2067,8 +2674,11 @@ function drawSpidey(x, y) {
             legMods[i].jy = oy;
             
             //console.log(origin, dest)
-            if (Math.trunc(Math.round(ox * 100)) === Math.trunc(Math.round(ex * 100)) 
-            && Math.trunc(Math.round(oy*100)) === Math.trunc(Math.round(ey*100))) {
+            if (legMods[i].anim === jumping && lastTimestamp - legMods[i].start < 600)
+            {
+                legMods[i].x = legMods[i].jx;
+                legMods[i].y = legMods[i].jy;
+            } else if (sec === 1) {
                 //console.log("stopping:", ox, ex, oy, ey, sec);
                 legMods[i].x = legMods[i].dx;
                 legMods[i].y = legMods[i].dy;
@@ -2078,22 +2688,8 @@ function drawSpidey(x, y) {
             }
         }
         if (legMods[i].anim === walking) {
-
-            //using timestamped animation method
-            //normalize origin - dest : 0 - 100%
-            //elapsed = timestamp - start
-            //
-
-            
-//     if (previousTimeStamp !== timestamp) {
-//         // Math.min() is used here to make sure the element stops at exactly 200px
-//         const count = Math.min(0.1 * elapsed, 200);
-//         canvas.style.transform = `translateX(${count}px)`;
-//         if (count === 200) done = true;
-
             //250ms default step ... 1/4 spidey radius 
-
-            const stepSpeed = 250 + (250 * (Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2)));
+            const stepSpeed = 333//(233 + (233 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
             const sec = Math.min(elapsed/stepSpeed, 1);  
             //console.log(Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2))
 
@@ -2113,14 +2709,13 @@ function drawSpidey(x, y) {
             legMods[i].jx = ox;
             legMods[i].jy = oy;
 
-            if (elapsed <= perfectFrameTime * deltaTime && Math.abs(difx+dify) > 1){
-                footStep(i, 0.3);
-            }
+            // if (elapsed <= perfectFrameTime * deltaTime && Math.abs(difx+dify) > 1){
+            //     footStep(i, 0.3);
+            // }
             
 
-            if (Math.trunc(Math.round(ox * 100)) === Math.trunc(Math.round(ex * 100)) 
-            && Math.trunc(Math.round(oy*100)) === Math.trunc(Math.round(ey*100))) {
-                //console.log("stopping:", ox, ex, oy, ey, sec);
+            if (sec === 1) {
+                // console.log("stopping:", ox, ex, oy, ey, sec);
                 legMods[i].x = legMods[i].dx;
                 legMods[i].y = legMods[i].dy;
                 legMods[i].anim = grabbing;
@@ -2165,8 +2760,7 @@ function drawSpidey(x, y) {
             }
             
 
-            if (Math.trunc(Math.round(ox * 100)) === Math.trunc(Math.round(ex * 100)) 
-            && Math.trunc(Math.round(oy*100)) === Math.trunc(Math.round(ey*100))) {
+            if (sec === 1) {
                 //console.log("stopping:", i, legMods[i].anim, ox, ex, oy, ey, sec);
                 legMods[i].x = legMods[i].dx;
                 legMods[i].y = legMods[i].dy;
@@ -2179,17 +2773,27 @@ function drawSpidey(x, y) {
                     legMods[i].dy = 0;
                 }
                 if (legMods[i].anim === throwWeb){
-                    layWeb? placeWeb() : startWeb();
+                    launchWeb(i);
                     legMods[i].anim = falling ? none : walking;   
                     footStep(i, 0.5)
                     legMods[i].dx = 0;
                     legMods[i].dy = 0;
                 } else if(legMods[i].anim === readyWeb) {
                     if(LMBHeld){
+                        //const rotw = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)), {x: , y: });
                         legMods[i].anim = readyWeb;    
-                        legMods[i].dx = cursorPos.components[0]/2 - spideyLegs[i].x/2;
-                        // legMods[i].dx += falling ? spideyLegs[i].x * 0.5 : 0;
-                        legMods[i].dy = cursorPos.components[1]/2 - spideyLegs[i].y;
+                            legMods[i].dx = cursorPos.components[0]/2 - spideyLegs[i].x/2;
+                            // legMods[i].dx += falling ? spideyLegs[i].x * 0.5 : 0;
+                            legMods[i].dy = cursorPos.components[1]/2 - spideyLegs[i].y;
+                        if (!legMods.some((x, j) => {return x.anim == readyWeb && j !== i}) && !layWeb){
+                            let scale = Math.abs(Math.hypot(mouseCursor.x, mouseCursor.y)) / spideyRadius;
+                            scale = Math.min(1, scale - 1);
+                            //console.log(scale)
+                            legMods[i].dx += (-cursorPos.components[0]) * scale;
+                            legMods[i].dy += (-cursorPos.components[1]) * scale;
+                            // legMods[i].dx *= -1;
+                            // legMods[i].dy *= -1;
+                        }
                     } else {
                         legMods[i].anim = throwWeb;    
                         legMods[i].dx = cursorPos.components[0] - spideyLegs[i].x;
@@ -2203,7 +2807,7 @@ function drawSpidey(x, y) {
                         legMods[i].dy = -Math.abs(cursorPos.components[1]/3) - spideyLegs[i].y;
                     } else {
                         legMods[i].anim = throwStrike;    
-                        legMods[i].dx = cursorPos.components[0] - spideyLegs[i].x*0.9;
+                        legMods[i].dx = cursorPos.components[0] - spideyLegs[i].x*0.95;
                         legMods[i].dy = cursorPos.components[1] - spideyLegs[i].y;
                     }
                 } 
@@ -2224,8 +2828,7 @@ function drawSpidey(x, y) {
             legMods[i].jx = ox;
             legMods[i].jy = oy;
             
-            if (Math.trunc(Math.round(ox * 100)) === Math.trunc(Math.round(ex * 100)) 
-            && Math.trunc(Math.round(oy*100)) === Math.trunc(Math.round(ey*100))) {
+            if (sec === 1) {
                 //console.log("stopping:", ox, ex, oy, ey, sec);
                 legMods[i].x = legMods[i].dx;
                 legMods[i].y = legMods[i].dy;
@@ -2240,30 +2843,56 @@ function drawSpidey(x, y) {
 
         //console.log(xrotation, yrotation)
 
-
-    
         const legOrigX = (legOrigins[i].x + ((legOrigins[i].y - legOrigins[i].x) * Math.min(1, Math.abs(xrotation/(spideyRadius/2)))))
         const legOrigY = (legOrigins[i].y + ((legOrigins[i].x - legOrigins[i].y) * doubleClamp(-xrotation/spideyRadius, -0.5, 1)))
+        //const legrot = rotate_point(0, 0, Math.atan2(copySign(yrotation,legOrigins[i].x), -xrotation), {x: legOrigX,y: legOrigY});
+        //console.log((rotation / Math.abs(rotation)))
+        const xanchor = x + dx + (copySign(dx, legOrigins[i].x) * (1 - Math.abs(yrotation  / (spideyRadius / 2))) / 2)
+        const yanchor = y - dy * (yrotation / Math.abs(yrotation))
+            * Math.min(1, Math.abs(yrotation / (spideyRadius / 3)))
+            + (((dy) * (legOrigins[i].y/2)) 
+            * (1 - Math.abs(yrotation / (spideyRadius))))
+
+        const rotated = rotate_point(0, 0, Math.atan2(xrotation, -20), {x: xanchor-x,y: yanchor-y});
+        const invrotated = rotate_point(0, 0, Math.atan2(xrotation, 20), {x: xanchor-x,y: yanchor-y});
+        //rotate the stepping offset!
+        const rotay = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)), {x: 0, y: ay});
+        ay = rotay.y
+        rotay.x *= yrotation > 0 ? 1 : -1;
+        // const anchrotx = x-rotated.x;
+        // const anchroty = y-rotated.y;
+        //rotated.x = Math.abs(yrotation) > 12 ? x-xanchor : x-xanchor;
+
+        rotated.y = Math.abs(yrotation) > 5 ? rotated.y : yanchor-y + Math.max(0.1,(rotated.y-yanchor+y) * (yrotation/5));
+        invrotated.y = Math.abs(yrotation) > 5 ? invrotated.y : yanchor-y + ((invrotated.y-yanchor+y) * (-yrotation/5));
+        const anchrotx = yrotation >= 0 ? x-rotated.x : x+invrotated.x;
+        const anchroty = yrotation >= 0 ? y-rotated.y : y+invrotated.y;
+           if (jactive){
+            context.fillStyle = "#00ff00"; 
+            context.fillCircle(spideyPos.x+xrotation,spideyPos.y+yrotation,3)
+            // context.fillStyle = "#0000ff";     
+            // context.fillCircle(xanchor,yanchor,2)   
+            // context.strokeStyle = "#00ffff";     
+            // context.strokeCircle(anchrotx,anchroty,2)   
+            // context.strokeStyle = "#000000"; 
+            context.fillStyle = "#000000"; 
+        }
+    
         context.beginPath();
         const startx = x + legOrigX;
         const starty = y + legOrigY;
         context.moveTo(startx, starty);
 
-        //console.log((rotation / Math.abs(rotation)))
-        const xanchor = x + dx + (copySign(dx, legOrigX) * (1 - Math.abs(yrotation  / (spideyRadius / 2))) / 2)
-        const yanchor = y - dy * (yrotation / Math.abs(yrotation))
-            * Math.min(1, Math.abs(yrotation / (spideyRadius / 3)))
-            + (((dy) * (legOrigins[i].y/2)) 
-            * (1 - Math.abs(yrotation / (spideyRadius))))
-             
         //anchor x, anchor y, dest x, dest y
         context.quadraticCurveTo(
             //x anchor
-            xanchor, 
+            anchrotx, 
+            // ,
 
             //y anchor !
             // 
-            yanchor, 
+            anchroty, 
+            // ,
 
             // y                               //spideyPos y/init y
             // - ((dy * 2.5)                   //inverted leg pos Y * multiplier
@@ -2274,7 +2903,7 @@ function drawSpidey(x, y) {
            // Math.min(
                 //worldCanvas.width - 5,
                 Math.max(5,
-                    x + (dx + ox)//)
+                    x + (dx + ox + rotay.x)//)
                 ), 
                 
             //Math.min(
@@ -2288,7 +2917,7 @@ function drawSpidey(x, y) {
             if (legMods[i].anim === grabbing){
                 context.fillCircle(
                 Math.max(5,
-                    x + (dx + ox)
+                    x + (dx + ox + rotay.x)
                 ), 
                 Math.max(5, y + (dy + oy + ay)
                 ),
@@ -2297,7 +2926,7 @@ function drawSpidey(x, y) {
                 } else {
                 context.strokeCircle(
                 Math.max(5,
-                    x + (dx + ox)
+                    x + (dx + ox + rotay.x)
                 ), 
                 Math.max(5, y + (dy + oy + ay) + 1
                 ),
@@ -2309,7 +2938,7 @@ function drawSpidey(x, y) {
                 context.fillStyle = "#ffffff";
                 context.fillCircle(
                 Math.max(5,
-                    x + (dx + ox)
+                    x + (dx + ox + rotay.x)
                 ), 
                 Math.max(5, y + (dy + oy + ay) + 1
                 ),
@@ -2337,21 +2966,62 @@ function drawSpidey(x, y) {
     let eo = 0;
     //pupil offset (x)
     let po = 0;
-    if (upPressed) eo = -2;
-    if (downPressed) eo = 2;
-    if (rightPressed) po = 2;
-    if (leftPressed) po = -2;
+    if (upPressed) eo = -0.5;
+    if (downPressed) eo = 0.5;
+    if (rightPressed) po = 0.5;
+    if (leftPressed) po = -0.5;
     if(RMBHeld || LMBHeld){
-        po = cursorPos.components[0] / spideyRadius * 2
-        eo = cursorPos.components[1] / spideyRadius * 2
+        po = cursorPos.components[0] / spideyRadius * 0.5
+        eo = cursorPos.components[1] / spideyRadius * 0.5
     }
     context.fillStyle = "#ffffff";
-    context.fillCircle(x - (4 + (2 * xrotation/spideyRadius)), y - (2 + (-2 * xrotation/spideyRadius)), 4);
-    context.fillCircle(x + (4 - (2 * xrotation/spideyRadius)), y - (2 + (2 * xrotation/spideyRadius)), 4);
+    context.fillCircle(x - (4 + (2 * xrotation/spideyRadius)), y - (2 + (-2 * xrotation/spideyRadius)), 2.5);
+    context.fillCircle(x + (4 - (2 * xrotation/spideyRadius)), y - (2 + (2 * xrotation/spideyRadius)), 2.5);
     //pupils
     context.fillStyle = "#000000";
-    context.fillCircle(x - (4 - po + (2 * xrotation/spideyRadius)), y - (2 - eo + (-2 * xrotation/spideyRadius)), 1.5);
-    context.fillCircle(x + (4 + po - (2 * xrotation/spideyRadius)), y - (2 - eo + (2 * xrotation/spideyRadius)), 1.5);
+    context.fillCircle(x - (4 - po + (2 * xrotation/spideyRadius)), y - (2 - eo + (-2 * xrotation/spideyRadius)), 2);
+    context.fillCircle(x + (4 + po - (2 * xrotation/spideyRadius)), y - (2 - eo + (2 * xrotation/spideyRadius)), 2);
+
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 0.5;
+    //fangs
+    if(lastTimestamp - dashCoolDown < 750){
+        const bite = lastTimestamp - dashCoolDown > 500 ? 1 :  2.5 * (((lastTimestamp - dashCoolDown)%1000)/500);
+        let bob = (((lastTimestamp - dashCoolDown)%750)/500);
+        
+        const step = bob ;
+        const weave = bob > 1 ? 2 - step : -step;
+        spideyPos.y += weave;
+        for(let l=0;l<spideyLegs.length;l++){
+            legMods[l].y -= weave; 
+        }
+    context.beginPath();
+    context.moveTo(x-3 - bite + (2 * xrotation/spideyRadius), y+2.5 - (-2 * xrotation/spideyRadius));
+    context.bezierCurveTo(
+        x - 3 - bite + (2 * xrotation/spideyRadius), y + 3 - (-2 * xrotation/spideyRadius),
+        x - 4 - bite + (2 * xrotation/spideyRadius), y + 5 - (-2 * xrotation/spideyRadius),
+        x - 1 - bite + (2 * xrotation/spideyRadius), y + 6 - (-2 * xrotation/spideyRadius),
+    );
+    context.bezierCurveTo(
+        x - 2 - bite + (2 * xrotation/spideyRadius), y + 4 - (-2 * xrotation/spideyRadius),
+        x - 1.5 - bite + (2 * xrotation/spideyRadius), y + 3.5 - (-2 * xrotation/spideyRadius),
+        x - 1 - bite + (2 * xrotation/spideyRadius), y + 3 - (-2 * xrotation/spideyRadius),
+    );
+    context.stroke();
+    context.beginPath();
+    context.moveTo(x+3 + bite + (2 * xrotation/spideyRadius), y+2.5 - (2 * xrotation/spideyRadius));
+    context.bezierCurveTo(
+        x + 3 + bite + (2 * xrotation/spideyRadius), y + 3 - (2 * xrotation/spideyRadius),
+        x + 4 + bite + (2 * xrotation/spideyRadius), y + 5 - (2 * xrotation/spideyRadius),
+        x + 1 + bite + (2 * xrotation/spideyRadius), y + 6 - (2 * xrotation/spideyRadius),
+    );
+    context.bezierCurveTo(
+        x + 2 + bite + (2 * xrotation/spideyRadius), y + 4 - (2 * xrotation/spideyRadius),
+        x + 1.5 + bite + (2 * xrotation/spideyRadius), y + 3.5 - (2 * xrotation/spideyRadius),
+        x + 1 + bite + (2 * xrotation/spideyRadius), y + 3 - (2 * xrotation/spideyRadius),
+    );
+    context.stroke();}
+
 }
 
 //edge detect
@@ -2433,8 +3103,6 @@ let falling = true;
 //let swinging = false;
 function gravity() {
 
-    //friction
-    setSpeed(-speed.components[0]/3,-speed.components[1]/3);
 
     let count = 0;
     for(let i=0; i < spideyLegs.length; i++) {
@@ -2445,6 +3113,14 @@ function gravity() {
     const gravity = count < 7 ? 0 : (count * 0.25);
     let wasFalling = falling;
     falling = gravity > 0 ? true: false;
+    
+    //friction
+    if (falling && shiftPressed && layWeb) 
+        {
+            setSpeed(-speed.components[0] * 0.1,-speed.components[1]* 0.1)
+        } else {
+            setSpeed(-speed.components[0]/3,-speed.components[1]/3);
+    };
     
     if (falling && count < 8 && layWeb === false) {
         velocity = velocity.scaleBy(0.90);
@@ -2458,13 +3134,15 @@ function gravity() {
                 //skip legs under spidey
                 if(footPosY > spideyPos.y) {
                     count++
-                    for(j=0; j < spideyLegs.length; j++) {
+                    for(let j=0; j < spideyLegs.length; j++) {
                         if(j===i || legMods[j].anim >= grabWeb){} else {
                             //console.log("Grab under spidey");
                             legMods[j].anim = walking;
                             legMods[j].start = lastTimestamp;
                             legMods[j].dx = 0;
                             legMods[j].dy = 0;
+                            legMods[j].x = legMods[j].jx;
+                            legMods[j].y = legMods[j].jy;
                         }
                         
                     }
@@ -2497,7 +3175,7 @@ function gravity() {
                 
                     if(legMods[j].anim !== swinging && legMods[j].anim < grabWeb){
                         legMods[j].anim = swinging;
-                        legMods[j].start = lastTimestamp - legMods[j].start;
+                       // legMods[j].start = lastTimestamp - legMods[j].start;
                         
                         legMods[j].dx = rope.components[0] - spideyPos.x - spideyLegs[j].x;
                         legMods[j].dy = rope.components[1] - spideyPos.y - spideyLegs[j].y;
@@ -2509,7 +3187,7 @@ function gravity() {
         {
             let swingLength = swingPoint.subtract(position).length()
             //console.log(swingLength)
-            if (swingLength < 8){
+            if (swingLength < 12){
                 shiftPressed = false;
                 spacePressed = false;
             } else {
@@ -2521,10 +3199,10 @@ function gravity() {
             //context.fillCircle(testPos.components[0], testPos.components[1], 5)
             //context.fillCircle(newPos.components[0], newPos.components[1], 10)
             setSpeed(
-                newPos.subtract(position.add(new Vector(0, gravity))).components[0],
-                newPos.subtract(position.add(new Vector(0, gravity))).components[1] 
+                newPos.subtract(position.add(new Vector (0, gravity))).components[0],
+                newPos.subtract(position.add(new Vector (0, gravity))).components[1]
                 );
-            velocity = newPos.subtract(position).scaleBy(1.015);
+            velocity = newPos.subtract(position).scaleBy(1+(0.001 * deltaTime))
             //console.log(newPos.subtract(position).normalize());
             }
         }
@@ -2532,10 +3210,12 @@ function gravity() {
 
     for(let i=0; i < spideyLegs.length; i++) {
             //if falling stops make others reach for nearest lines again
-            if(!falling && wasFalling && (legMods[i].anim === none || legMods[i].anim === jumping || legMods[i].anim === swinging)){
+            if(!falling && wasFalling && (legMods[i].anim === none || (legMods[i].anim === jumping && lastTimestamp - legMods[i].start > 600) || legMods[i].anim === swinging)){
                 //console.log("WasFalling");
                 legMods[i].anim = walking;
                 legMods[i].start = lastTimestamp;
+                legMods[i].x = legMods[i].jx;
+                legMods[i].y = legMods[i].jy;
                 legMods[i].dx = 0;
                 legMods[i].dy = 0;
             }
@@ -2572,8 +3252,9 @@ function gravity() {
     let line = 0;
     const circle = {radius: spideyRadius, center: spideyPos};
     
-    for (j=0; j < walkLines.length; j++){
+    for (let j=0; j < walkLines.length; j++){
         walkLines[j].valid = false;
+        walkLines[j].webID = -1;
     }
     
     //area circle
@@ -2601,35 +3282,37 @@ function gravity() {
     boundaryCircles.forEach((x) => {
         const circRadius = x.r;
         const circPos = {x: x.x, y: x.y};
-        if(jactive){
-            if (x.solid){
-                context.lineWidth = 3;
-                context.strokeStyle = "#444444"
-            } else {
-                context.lineWidth = 1;
-                context.strokeStyle = "#555555"
-            }
-            if(x.half){
-                context.strokeHalfCircle(circPos.x, circPos.y, circRadius);
-            } else {
-                context.strokeCircle(circPos.x, circPos.y, circRadius);
-            }
-        }
+        // if(jactive){
+        //     if (x.solid){
+        //         context.lineWidth = 3;
+        //         context.strokeStyle = "#444444"
+        //     } else {
+        //         context.lineWidth = 1;
+        //         context.strokeStyle = "#555555"
+        //     }
+        //     if(x.half){
+        //         context.strokeHalfCircle(circPos.x, circPos.y, circRadius);
+        //     } else {
+        //         context.strokeCircle(circPos.x, circPos.y, circRadius);
+        //     }
+        // }
         
         const circDist = Math.sqrt(dist2({x: testPos.components[0], y: testPos.components[1]}, circPos));
         const circDiff = {x: spideyPos.x - circPos.x, y: spideyPos.y - circPos.y};
-        circDepth =  (circRadius - circDist + (spideyRadius)) / spideyRadius - 0.1;
+        const circDepth =  (circRadius - circDist + (spideyRadius)) / spideyRadius - 0.1;
         
         if(circDist < spideyRadius + circRadius) {
             if(circDist < spideyRadius / 4 + circRadius) {
                 
                 //if falling grab hold
-                if(falling && !spacePressed){
+                if(falling && !spacePressed && !shiftPressed){
                     for(let i=0; i < spideyLegs.length; i++) {
                         //console.log("grab")
                         if(legMods[i].anim < grabWeb){
                             legMods[i].anim = walking;
                             legMods[i].start = lastTimestamp;
+                            legMods[i].x = legMods[i].jx;
+                            legMods[i].y = legMods[i].jy;
                             legMods[i].dx = 0;
                             legMods[i].dy = 0;
                         }
@@ -2647,7 +3330,7 @@ function gravity() {
                     let bouncePos = new Vector(spideyPos.x, spideyPos.y);
                     velocity = velocity.add(bouncePos.subtract(position));
                     if(moveCounter === 0){moveCounter++}    //stops double-bounce with line overlaps
-                        for (i=0; i < spideyLegs.length; i++) {
+                        for (let i=0; i < spideyLegs.length; i++) {
                             if(legMods[i].anim === grabbing){
                                 legMods[i].y -= ypush;
                                 legMods[i].dy -= ypush;
@@ -2712,19 +3395,19 @@ function gravity() {
 
         //lines 
         boundaryColliders.forEach((x) => {
-        if(jactive){
-            if (x.solid){
-            context.lineWidth = 3.0;
-            context.strokeStyle = "#444444";
-            } else {
-                context.lineWidth = 1;
-                context.strokeStyle = "#aaaaaa";
-            }
-            context.beginPath();
-            context.moveTo(x.p1.x, x.p1.y);
-            context.lineTo(x.p2.x, x.p2.y);
-            context.stroke();
-        }
+        // if(jactive){
+        //     if (x.solid){
+        //     context.lineWidth = 3.0;
+        //     context.strokeStyle = "#444444";
+        //     } else {
+        //         context.lineWidth = 1;
+        //         context.strokeStyle = "#aaaaaa";
+        //     }
+        //     context.beginPath();
+        //     context.moveTo(x.p1.x, x.p1.y);
+        //     context.lineTo(x.p2.x, x.p2.y);
+        //     context.stroke();
+        // }
         
             //A, B, C, r
             if(doesLineInterceptCircle(x.p1, x.p2, spideyPos, spideyRadius)){
@@ -2740,13 +3423,15 @@ function gravity() {
                 const distD = distToSegment(spideyPos, x.p1, x.p2);
                 if (distD < (spideyRadius / 4)) {
                     //if falling grab hold
-                    if(falling && !spacePressed){
+                    if(falling && !spacePressed && !shiftPressed){
                         for(let i=0; i < spideyLegs.length; i++) {
                             //console.log("grab");
                         if(legMods[i].anim < grabWeb){
                             legMods[i].anim = walking;
                             //init bug? 
                             legMods[i].start = lastTimestamp > 0? lastTimestamp : 0;
+                            legMods[i].x = legMods[i].jx;
+                            legMods[i].y = legMods[i].jy;
                             legMods[i].dx = 0;
                             legMods[i].dy = 0;
                         }
@@ -2825,7 +3510,7 @@ function gravity() {
 
                             spideyPos.y += ypush;
                             //setSpeed(0, -speed.components[1] / ());
-                            for (i=0; i < spideyLegs.length; i++) {
+                            for (let i=0; i < spideyLegs.length; i++) {
                                 if(legMods[i].anim === grabbing){
                                     legMods[i].y -= ypush;
                                     legMods[i].dy -= ypush;
@@ -2836,7 +3521,7 @@ function gravity() {
                         if (Math.abs(dx) > EPSILON && Math.abs(dx) > Math.abs(dy)) {
                             spideyPos.x += xpush;
                             //setSpeed(-speed.components[0], 0);
-                            for (i=0; i < spideyLegs.length; i++) {
+                            for (let i=0; i < spideyLegs.length; i++) {
                                 legMods[i].x -= xpush;
                                 legMods[i].dx -= xpush;
                             }
@@ -2860,7 +3545,7 @@ function gravity() {
             }
     })
 
-    webArray.forEach((x) => {
+    webArray.forEach((x, j) => {
         
         
             //A, B, C, r
@@ -2878,6 +3563,7 @@ function gravity() {
                 if (line < 16) {
                     //console.log(line, intercepts, walkLines)
                     walkLines[line].valid = true;
+                    walkLines[line].webID = j;
                     if(intercepts.length === 0) {
                         //console.log("Line is inside circle!");
                         walkLines[line].p1 = {x: x.p1.x - spideyPos.x, y: x.p1.y - spideyPos.y};
@@ -2938,38 +3624,287 @@ function gravity() {
 }
 
 
+function drawProjectiles(){
+    if (projectiles.length > 0 && (lastTimestamp - projectiles[0].start > 8000 || projectiles[0].y > worldSize.height)) projectiles.shift();
+
+    projectiles.forEach((x, j) => {
+        //speed / spideyradius * 2, just cuz
+        const changex = (x.speedx * 0.04) * deltaTime
+        const changey = (x.speedy * 0.04) * deltaTime
+        x.x += changex;
+        x.y += changey;
+        x.speedx *= 0.99;
+        x.speedy *= 0.99;
+        x.speedy += 1.2;
+        context.lineWidth = 1.5;
+        context.strokeStyle = "#ffffff";
+        if (jactive) context.strokeStyle = "#dddddd";
+        context.beginPath();
+        const size = x.type === 0? 8 : 1.5;
+        context.strokeCircle(x.x, x.y, size);
+        if (x.type === 1) {
+            context.fillStyle = "#ffffff";
+            context.fillCircle(x.x, x.y, size);
+            context.lineWidth = 1.0;
+            if(x.type === 1 && lastTimestamp - x.start > 2000) {
+                const time = lastTimestamp - x.start;
+                context.lineWidth = 1.0 * (1 - time%501/501);
+                if(lastTimestamp - x.start > 2500) return;
+            }
+            context.moveTo(x.x, x.y)
+            context.lineTo(spideyPos.x, spideyPos.y)
+            context.stroke();
+            //check sticks to obj
+            if (lastTimestamp - projectiles[0].start > Math.hypot(mouseCursor.x, mouseCursor.y)*2
+                && (checkCollision(x.x, x.y, 5) || checkWebCollision(x.x, x.y, 5) > -1)) {
+                //if big radius is a hit, do precise step-checking
+                let web = -1;
+                for(let i=1; i<20; i++){
+                    const stepx = x.x - (changex / i);
+                    const stepy = x.y - (changey / i);
+                    web = checkWebCollision(stepx, stepy, 1.5)
+                    if(checkCollision(stepx, stepy, 1) || web > -1){
+                        //make web hits in precise middle 
+                        if(web > -1){
+                            const start = closestSegmentPoint({x: stepx, y: stepy}, 
+                            {x: webArray[web].p1.x, y: webArray[web].p1.y}, 
+                            {x: webArray[web].p2.x, y: webArray[web].p2.y});
+                            webOrigin = {x: start.x, y: start.y, webID: web}
+                        } else {
+                            webOrigin = {x: stepx, y: stepy, webID: web}
+                        }
+                        layWeb = true;
+                        projectiles.splice(j, 1);
+                        if (shiftPressed && !falling) falling = true;
+                        break;
+                    }
+                    //} else {
+                        //webArray.push({p1: {x: webOrigin.x, y: webOrigin.y}, p2: {x: x.x, y: x.y}, solid: false, stuck: []})
+                        //projectiles.splice(i, 1)
+                        //layWeb = false;
+                        //webOrigin = {x: 0, y: 0}
+                    
+                }
+               
+            }
+        } 
+        
+        enemies.forEach((y) => {
+            if (!y.active) return;
+            if(intersection({x: x.x, y: x.y, r: 10}, {x: y.x, y: y.y, r: 10}).intersect_count > 0){
+                for(let i=1; i<5; i++){
+                    const stepx = x.x - (changex / i);
+                    const stepy = x.y - (changey / i);
+                    const intersect = intersection({x: stepx, y: stepy, r: size}, {x: y.x, y: y.y, r: 3});
+                    if (intersect.intersect_count > 0) {
+                        //console.log("Hit!", j, k);
+                        projectiles.splice(j, 1);
+                        y.active = false;
+                        fliesEaten++
+                        break;
+                    }
+                }
+            }
+           
+           
+
+            //
+        })
+
+    })
+}
+
 function drawWebs(){
-    webArray.forEach((x) => {
+    webArray.forEach((x, k) => {
             
         context.lineWidth = 1.5;
         context.strokeStyle = "#ffffff";
         if (jactive) context.strokeStyle = "#dddddd";
         context.beginPath();
         context.moveTo(x.p1.x, x.p1.y);
-        context.lineTo(x.p2.x, x.p2.y);
         // const animate = (lastTimestamp%3000)/1500; 
         // const lineWave = animate > 1? 2 - animate : animate;
         // context.quadraticCurveTo(
         //     x.p1.x + ((x.p2.x - x.p1.x) /2), (x.p1.y + ((x.p2.y - x.p1.y) / 2) + ( lineWave * 20)),
         //     x.p2.x, x.p2.y
         // );
+        //context.stroke();
+        
+
+        // send vibros out from stuck enemies 
+        // amplitude and frequency as rotation 
+        // position is a modulo along bug.xy to p1 & p2 
+        // curve repeats x3 
+        // settings: speed, pattern?
+        // speed: 
+        // .___~____x___~____.
+        // sine-ish wave 
+        // 0.364212423249, 0, 0.635787576751, 1
+
+        //temp/dupe array is debt...
+        const vibros = [];
+        //max of 8 at a time (= 16)
+        x.vibros.length = Math.min(8, x.vibros.length)
+        x.vibros.forEach((vibro, l) => {
+            const rotation = Math.atan2(x.p2.y - x.p1.y, x.p2.x - x.p1.x)
+            const amplitude = rotate_point(0, 0, rotation, {x:0, y: vibro.amp})
+            const frequency = rotate_point(0, 0, rotation, {x:vibro.freq, y:0})
+
+            const numvibes = vibros.length;
+            // draw curves then lines 
+            // push beginning and end locations 
+            // sort as dist from p1
+            // foreach drawline then move 
+            let startx = -1;
+            let starty = -1;
+            for (let i=0;i<16;i++) {
+                // towards the first or last point of the web
+                const destx = i<8 ? x.p1.x : x.p2.x;
+                const desty = i<8 ? x.p1.y : x.p2.y;
+                const j = i%8;
+                const freq = i<8 ? {...frequency} : {x: -frequency.x, y: -frequency.y};
+                const dx = destx - vibro.x + freq.x * (3);
+                const dy = desty - vibro.y + freq.y * (3);
+                const dist = Math.hypot(-dx, -dy);
+                const speed = 1000 * (dist / 250);
+                const animate = Math.max(0, Math.min(1, (lastTimestamp - vibro.start - (42*j)) / speed)); 
+                const prevanimate = (prevTimestamp - vibro.start - (42*j)) / speed; 
+                const prevx = vibro.x + dx * prevanimate;
+                const prevy = vibro.y + dy * prevanimate;
+                const vx = vibro.x + dx * animate;
+                const vy = vibro.y + dy * animate;
+                const scaled = (100/dist);
+
+                // const vlenx = vx - freq.x * (3);
+                // const vleny = vy - freq.y * (3);
+                if (j===0) {
+                    context.moveTo(vx, vy);
+                    startx = vx;
+                    starty = vy;
+
+                    if(vibro.amp > 1 && animate !== 0){
+                        x.attachedTo.forEach((atd2, ind) => {
+                                if (atd2 !== -1){
+                                    const targetp = ind === 0 ? x.p1 : x.p2;
+                                    if(prevanimate < 1 && animate === 1 && dist > 60){
+                                        //console.log("AttachedTo:", k, atd2, prevanimate, dist)
+                                        webArray[atd2].vibros.push({x: targetp.x, y: targetp.y, start: lastTimestamp, freq: vibro.freq, amp: vibro.amp * 0.5})
+                                    }
+                                }
+                            })
+                            //
+                            if(vibro.amp * (1 - animate) > 1){
+                                x.attached.forEach((atd) => {
+                                    const atchd = webArray[atd];
+                                    if (animate < 1){     
+                                        const targetp = atchd.attachedTo[0] === k ? atchd.p1 : atchd.p2;
+                                        //if sign flips from prev frame or is 0 for both x and y 
+                                        if((Math.sign(vx - targetp.x) !== Math.sign(prevx - targetp.x) || Math.sign(vx - targetp.x) === 0)
+                                        && (Math.sign(vy - targetp.y) !== Math.sign(prevy - targetp.y) || Math.sign(vy - targetp.y) === 0)){
+                                            //console.log("Attached:", vx - targetp.x, vy - targetp.y)
+                                            atchd.vibros.push({x: targetp.x, y: targetp.y, start: lastTimestamp, freq: vibro.freq, amp: vibro.amp * (1 - animate)})
+                                        }
+                                    }
+                                }) 
+                            }
+                        //attachedTo: always 2 entries, either -1 or webID
+                        //a simpler way? 
+                        // if animate === 1
+                        // dest p1/p2 === index 0/1 -- when anim is finished I know I am at my attachedTo "destination"
+                        // send vibro to attachedTo at dest pos
+                        // if (animate < 1){
+                               
+                        // }
+                       
+                    }
+                }
+                //temp - 2 groups of 3 curves -- later to define in pattern array: 0,1,1,1,0,1,1,1 etc
+                if(animate < 1) {
+                    //web to start position
+                    const amp = {...amplitude};
+                    amp.x *= 1 - animate;
+                    amp.y *= 1 - animate;
+                    if(animate < 0.1 * scaled) {
+                        amp.x *= animate*(10/scaled);
+                        amp.y *= animate*(10/scaled);
+                        freq.x *= animate*(10/scaled);
+                        freq.y *= animate*(10/scaled);
+                    }
+                    //console.log("AMP:", vibro.amp * (1-animate))
+                    if (i===7 || i===15) {
+                        //context.moveTo(vx, vy);
+                        const p1 = {x: startx, y: starty};
+                        const p2 = {x: vx, y: vy};
+                        if (i===7) vibros.push({p1: p1, p2: p2, dist: Math.hypot(x.p1.x - startx, x.p1.y - starty)});
+                        if (i===15) vibros.push({p1: p2, p2: p1, dist: Math.hypot(x.p1.x - vx, x.p1.y - vy)});
+                    }
+                    // formerly patterns
+                    //if(i !== 0 && i !== 8){
+                    context.bezierCurveTo(
+                        vx - freq.x * (1) + amp.x, vy + amp.y - freq.y * (1),
+                        vx - freq.x * (2) - amp.x, vy - amp.y - freq.y * (2),
+                        vx, vy,
+                    );
+                    // }else{
+                    //     context.lineTo(vx + freq.x * (3), vy + freq.y * (3),);
+                    // }
+                }
+            }
+            //if no vibro was pushed we can delete this entry
+            if(numvibes === vibros.length){
+                x.vibros.splice(k, 1);
+                //console.log("Removing vibro", k, l, webArray[k])
+            }
+            
+        })
+        context.moveTo(x.p1.x, x.p1.y);
+        if(vibros.length>0){
+            vibros.sort((a, b) => {
+                if(a.dist < b.dist){
+                    return -1
+                }
+                if(a.dist > b.dist){
+                    return 1
+                }
+                return 0
+            })
+            
+            
+            let prevx = 0;
+            let prevy = 0;
+            vibros.forEach((v) => {
+                const distl = (v.p2.x - v.p1.x)*(v.p2.x - v.p1.x) + (v.p2.y - v.p1.y)*(v.p2.y - v.p1.y);
+                if (Math.abs((v.p2.x - prevx)*(v.p2.x - prevx) + (v.p2.y - prevy)*(v.p2.y - prevy)) > Math.abs(distl)) {
+                    context.lineTo(v.p1.x, v.p1.y);
+                    }
+                context.moveTo(v.p2.x, v.p2.y);
+                prevx = v.p2.x;
+                prevy = v.p2.y;
+            })
+        } else {
+            //when all vibros are done animating, delete them all...
+            //imperfect solution but it works 
+            x.vibros.length = 0;
+        }
+        context.lineTo(x.p2.x, x.p2.y);
         context.stroke();
         
-        context.lineWidth = 1;
+        //context.lineWidth = 1;
     })
+    
     context.lineWidth = 1.5; 
     context.strokeStyle = "#ffffff"; 
     let holdWeb = -1;  
-    let secondWeb = 0;
+    let secondWeb = -1;
     for(let i=0; i<spideyLegs.length; i++){
         if(legMods[i].anim === readyWeb || legMods[i].anim === throwWeb){
             holdWeb = i;
-            secondWeb = secondWeb? secondWeb : i;
+            secondWeb = secondWeb >= 0? secondWeb : i;
             context.beginPath();
             context.moveTo(spideyPos.x, spideyPos.y);
             context.lineTo(spideyPos.x + spideyLegs[i].x + legMods[i].jx, spideyPos.y + spideyLegs[i].y + legMods[i].jy);
             context.stroke();
-            if (secondWeb){
+            if (secondWeb !== i && !layWeb || (falling && shiftPressed)){
                 let j = secondWeb;
                 context.beginPath();
                 context.moveTo(spideyPos.x + spideyLegs[i].x + legMods[i].jx, spideyPos.y + spideyLegs[i].y + legMods[i].jy);
@@ -2984,7 +3919,7 @@ function drawWebs(){
         if (jactive) context.strokeStyle = "#dddddd";
         context.beginPath();
         context.moveTo(webOrigin.x, webOrigin.y);
-        holdWeb > -1 ? context.lineTo(spideyPos.x + spideyLegs[holdWeb].x + legMods[holdWeb].jx, spideyPos.y + spideyLegs[holdWeb].y + legMods[holdWeb].jy) : context.lineTo(spideyPos.x, spideyPos.y);
+        holdWeb > -1 && !(falling && shiftPressed) ? context.lineTo(spideyPos.x + spideyLegs[holdWeb].x + legMods[holdWeb].jx, spideyPos.y + spideyLegs[holdWeb].y + legMods[holdWeb].jy) : context.lineTo(spideyPos.x, spideyPos.y);
         context.stroke();
         
 
@@ -3013,8 +3948,8 @@ function setSpeed(x, y) {
 
 function move() {
 
-    xmov = speed.components[0];
-    ymov = speed.components[1];
+    let xmov = speed.components[0];
+    let ymov = speed.components[1];
 
     // if (!isNaN(deltaTime)) {
     // //console.log(xmov, ymov);
@@ -3024,7 +3959,6 @@ function move() {
     //move spidey pos
     spideyPos.x += xmov;
     spideyPos.y += ymov;
-
     //enforce pos 
     //spideyPos.x = Math.min(worldCanvas.width - radius + buffer,Math.max(radius - buffer, spideyPos.x))
     //spideyPos.y = Math.min(worldCanvas.height - radius + buffer,Math.max(radius - buffer, spideyPos.y))
@@ -3061,27 +3995,44 @@ function move() {
 
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawEnemies(){
+    
+    if (enemies.length === 0 || enemies.every((x) => {return !x.active})) {
+       // enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
+        enemies.push({type: 2, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
+        for(let i=0;i<1001;i++){
+            //enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
+            enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
+
+        }
+    }
     enemies.forEach((x) => {
-        if(x.type === 0 && x.active
+        if(x.active
             && x.x > spideyPos.x - viewport.width
             && x.x < spideyPos.x + viewport.width
             && x.y > spideyPos.y - viewport.height
             && x.y < spideyPos.y + viewport.height){
             //animate
-            drawFly(x.x, x.y, x.start);
+            switch (x.type){
+                case 0:
+                    drawFly(x);
+                    break
+                    case 1:
+                        drawAnt(x);
+                        break
+                    case 2:
+                        drawLadybug(x);
+                        break
+                default: drawFly(x);
+            }
+            
         }
         
-    if (enemies.every((x) => {return !x.active})) {
-        for(let i=0;i<5;i++){
-        enemies.push({type: 0, x: worldSize.width * Math.random(), y: -20, start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
-        }
-    }
     })
 }
 
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(){
-    if(!jactive) {
+    //if(!jactive) {
     scnObj.forEach((x) => {
         if(x.type === ground){
             //
@@ -3100,40 +4051,47 @@ function drawObjects(){
             
         }        
     })
-    }
+    //}
 }
 
 function processAI(){
-    enemies.forEach((x) => {
+    enemies.forEach((x, j) => {
         if(x.active) {
             const targetx = x.x - x.dx;
             const targety = x.y - x.dy;
             let hitLine = -1;
-            if(x.type === 0){
+            if(x.type === 0 && x.anim != stuck){
                 webArray.forEach((y, i) => {
-                    if (doesLineInterceptCircle(y.p1, y.p2, x, 3)) {
+                    if (doesLineInterceptCircle(y.p1, y.p2, x, 3) && Math.random() > 0.95) {
                         hitLine = i;
                     //     const distx = y.p2.x - y.p1.x;
                     //     const disty = y.p2.y - y.p1.y;
                     //     const percent = Math.hypot(distx, disty);
                     //     console.log(percent)
-                        webArray[i].stuck.push(x.x, x.y) 
+                        const intercepts = interceptCircleLineSeg({center: {x: x.x, y: x.y}, radius: 3}, y)
+                        x.x = intercepts[0].x;
+                        x.y = intercepts[0].y;
+                        x.dx = intercepts[0].x;
+                        x.dy = intercepts[0].y;
                         x.anim = stuck;
+                        x.start = lastTimestamp;
+                        webArray[i].stuck.push(j) 
+                        webArray[i].vibros.push({x: x.x, y: x.y, start: lastTimestamp, amp: 6.35787, freq: 3.64212}) 
 
                     };
                 })
                 if(hitLine > -1) {
                     //console.log(hitLine)
                 } else if(Math.abs(targetx) < 1 && Math.abs(targety) < 1){
-                    x.dx += 2000 * Math.random() - 1000;
-                    x.dy += 2000 * Math.random() - 1000;
+                    x.dx += 100 * Math.random() - 50;
+                    x.dy += 100 * Math.random() - 50;
                     //enforce valid
                     x.dx = Math.min(worldSize.width - 15, Math.max(15, x.dx));
                     x.dy = Math.min(worldSize.height - 15, Math.max(15, x.dy));
                     //console.log(x.dx, x.dy);
                 } else {
-                    x.x -= copySign(0.5 * deltaTime, targetx);
-                    x.y -= copySign(0.5 * deltaTime, targety);
+                    x.x -= copySign(0.25, targetx);
+                    x.y -= copySign(0.25, targety);
                 }
             } 
         }
@@ -3146,12 +4104,28 @@ function processAI(){
 var spaceHeld = 0;
 var jumpCoolDown = 0;
 var curYPos = 0;
+var dashCoolDown = -9990;
+
+var startgame = false;
+//temp
+if (startgame) {
+
+    const w = viewport.width - buffer;
+    const h = viewport.height - buffer;
+    
+        boundaryColliders.push({p1: {x: w, y: h}, p2: {x: 0, y: h}, solid: true});
+        boundaryColliders.push({p1: {x: 0, y: h}, p2: {x: 0, y: 0}, solid: true});
+        boundaryColliders.push({p1: {x: 0, y: 0}, p2: {x: w, y: 0}, solid: true});
+        boundaryColliders.push({p1: {x: w, y: 0}, p2: {x: w, y: h}, solid: true});
+        //areaBoxes.push({p1: {x: 0, y: h}, p2: {x: w, y: h-30}})
+}   
 //main game draw
 function update(timestamp) {
     requestAnimationFrame(update);
     deltaTime = (timestamp - lastTimestamp) / perfectFrameTime;
     deltaTime = isNaN(deltaTime) ? 1 : deltaTime;
     //console.log(deltaTime);
+    prevTimestamp = lastTimestamp;
     lastTimestamp = timestamp;
     
     //reset frame
@@ -3159,114 +4133,217 @@ function update(timestamp) {
     //vctx.clearRect(0, 0, viewport.width, viewport.height);
 
 
-    //player movement
-    move();
-    
-    processAI();
+    //start screen 
+    if (startgame) {
 
-    //gravity + forces
-    gravity();
+        const w = viewport.width - buffer;
+        const h = viewport.height - buffer;
+        
 
-    const w = viewport.width;
-    const h = viewport.height;
-    const overdrawX = w + (w*0.2);
-    const overdrawY = h + (h*0.2); 
-    const bgw = viewport.width / worldScale;
-    const bgh = viewport.height / worldScale;
+        context.fillStyle = "#aaaaaa";
+        context.fillRect(0,0,w,h)
 
-    const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
-    const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
-    bgctx.save();
-    bgctx.translate(
-        -bgXoffset,
-         -bgYoffset 
-         );
-    //console.log(spideyPos, worldSize)
-    drawObjects();
-    bgctx.restore();
-    //source, sourceXY, WH, destXY, dWH
-    //context.drawImage(background, 0, 0, overdrawX * worldScale, overdrawY * worldScale, 0, 0, overdrawX, overdrawY)
-    context.drawImage(background, 0, 0,
-        // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)),
-        //  Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)), 
-         w * worldScale, h * worldScale, 0, 0,
-        // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)), 
-        // Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)), 
-        w, h)
 
-    context.save();
-    context.translate(
-        -bgXoffset,
-        -bgYoffset
-        );
-        //context.scale(worldScale, worldScale);
         drawWebs();
-        drawCursor();
-        drawSpidey(spideyPos.x, spideyPos.y);
-        drawEnemies();
-    context.restore();
+        context.fillStyle = "#ffffff";
+        context.font = "35px Verdana";
+        context.textAlign = "left";
+        context.fillText("__ S P I D E Y __", w * 0.25, h * 0.2);
+        const boxw = context.measureText("__ S P I D E Y __").width;
+        const boxh = context.measureText("__ S P I D E Y __").actualBoundingBoxAscent;
+        areaBoxes.push({p1: {x: w * 0.25, y: h * 0.2}, 
+            p2: {x: w * 0.25 + boxw, y: h * 0.2 - boxh}});
 
-    vctx.drawImage(canvas, 0, 0,
-        // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)),
-        // Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)),
-        w, h, 
-        0, 0, 
-        w, h)
-    //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
-    
-    //fps counter
-    const fps = Math.trunc(Math.round(framerate / deltaTime));
-    vctx.font = "22px serif";
-    if(fps < 50) {
-        vctx.fillStyle = "#ff00ff";
-    }else if(fps < 30){
-        vctx.fillStyle = "#ff0000";
+        context.fillStyle = "#444444";
+        context.textAlign = "left";
+        context.font = "22px";
+        context.fillText("start", w * 0.285, h * 0.33);
+        const box1w = context.measureText("start").width;
+        const box1h = context.measureText("start").actualBoundingBoxAscent;
+        areaBoxes.push({p1: {x: w * 0.285, y: h * 0.33}, 
+            p2: {x: w * 0.285 + box1w, y: h * 0.33 - box1h}});
+
+        context.fillText("continue", w * 0.285, h * 0.33 + 60);
+        const box2w = context.measureText("continue").width;
+        const box2h = context.measureText("continue").actualBoundingBoxAscent;
+        areaBoxes.push({p1: {x: w * 0.285, y: h * 0.33 + 60}, 
+            p2: {x: w * 0.285 + box2w, y: h * 0.33 + 60 - box2h}});
+            
+        context.fillText("options", w * 0.285, h * 0.33 + 120);
+        const box3w = context.measureText("options").width;
+        const box3h = context.measureText("options").actualBoundingBoxAscent;
+        areaBoxes.push({p1: {x: w * 0.285, y: h * 0.33 + 120}, 
+            p2: {x: w * 0.285 + box3w, y: h * 0.33 + 120 - box3h}});
+            
+        context.fillText("continue", w * 0.285, h * 0.33 + 60);
+
+        if (mouseFocus){
+            const curX = spideyPos.x;
+            const curY = spideyPos.y;
+            mousePosition.x = Math.min(w - spideyRadius*0.2, Math.max(spideyRadius*0.2, mousePosition.x));
+            mousePosition.y = Math.min(h - spideyRadius*0.2, Math.max(spideyRadius*0.2, mousePosition.y));
+            spideyPos.x = mousePosition.x;
+            spideyPos.y = mousePosition.y;
+            for(let i=0; i < legMods.length; i++) {
+                if(legMods[i].anim === grabbing) {
+                    legMods[i].x += curX - spideyPos.x;
+                    legMods[i].y += curY - spideyPos.y;
+                    }
+                }
+            drawCursor();
+            drawSpidey(spideyPos.x, spideyPos.y);
+        } 
+        vctx.drawImage(canvas, 0, 0,
+            w, h, 
+            0, 0, 
+            w, h)
+            
+        processInput();
+        move();
+        gravity();
     }
-    vctx.fillText(`fps: ${fps}`, 5, 20);
 
-    //fly counter for lisa
-    vctx.fillStyle = "#ffffff";
-    vctx.fillText(`flies: ${fliesEaten}`, 5, 40);
-    //spideyPos.x += 0.5;
-    // const input1 = false;
-    // const input2 = false;
+    //game 
+    if (!startgame){
+        //player movement
+        processInput();
+        move();
+        
+        processAI();
 
-    //context.restore();
+        //gravity + forces
+        gravity();
+
+        const w = viewport.width;
+        const h = viewport.height;
+        const overdrawX = background.width;
+        const overdrawY = background.height; 
+        const bgw = background.width / worldScale;
+        const bgh = background.height / worldScale;
+
+        const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
+        const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
+        bgctx.save();
+        bgctx.translate(
+            -bgXoffset,
+            -bgYoffset 
+            );
+        //console.log(spideyPos, worldSize)
+        drawObjects();
+        bgctx.restore();
+        //source, sourceXY, WH, destXY, dWH
+        //context.drawImage(background, 0, 0, overdrawX * worldScale, overdrawY * worldScale, 0, 0, overdrawX, overdrawY)
+        context.drawImage(background, 0, 0,
+            // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)),
+            //  Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)), 
+            w * worldScale, h * worldScale, 0, 0,
+            // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)), 
+            // Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)), 
+            w, h)
+
+        context.save();
+        context.translate(
+            -bgXoffset,
+            -bgYoffset
+            );
+            //context.scale(worldScale, worldScale);
+            drawProjectiles();
+            drawWebs();
+            drawCursor();
+            drawSpidey(spideyPos.x, spideyPos.y);
+            drawEnemies();
+        context.restore();
+
+        vctx.drawImage(canvas, 0, 0,
+            // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)),
+            // Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)),
+            overdrawX, overdrawY, 
+            0, 0, 
+            w, h)
+        //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
+        
+        //fps counter
+        const fps = Math.trunc(Math.round(framerate / deltaTime));
+        vctx.font = "22px serif";
+        if(fps < 50) {
+            vctx.fillStyle = "#ff00ff";
+        }else if(fps < 30){
+            vctx.fillStyle = "#ff0000";
+        }
+        vctx.fillText(`fps: ${fps}`, 5, 20);
+
+        //fly counter for lisa
+        vctx.fillStyle = "#ffffff";
+        vctx.fillText(`flies: ${fliesEaten}`, 5, 40);
+        //spideyPos.x += 0.5;
+        // const input1 = false;
+        // const input2 = false;
+
+        //context.restore();
+        
     
-    if(upPressed && !downPressed && !legMods.every(x => {return x.anim !== grabbing && x.anim !== walking})) {
-        setSpeed(0, -1.5);
+        //Leg Hover 
+        // let count = 0;
+        // for (let i = 0; i < spideyLegs.length; i++) {
+        //         if(legMods[i].anim === walking && count <= 1) {
+        //             count++;
+        //             //timestamp 
+        //             legMods[i].start += (1000 / 60);
+        //             //console.log(i, legMods[i].start, lastTimestamp)
+        //         }
+        //     }
+    // }
+
+
+    
+    }
+    
+
+
+}
+
+function processInput () {
+    if(upPressed && !downPressed) {
+        setSpeed(0, -0.75);
         
     }
-    if(downPressed && !upPressed && !legMods.every(x => {return x.anim === swinging})) {
-        setSpeed(0, 1.5);
+    if(downPressed && !upPressed) {
+        setSpeed(0, 0.75);
     }
 
     if(rightPressed && !leftPressed) {
-        setSpeed(1.5, 0);
+        setSpeed(0.75, 0);
     }
     if(leftPressed && !rightPressed) {
-        setSpeed(-1.5, 0);
+        setSpeed(-0.75, 0);
     }
 
-    
+
     if(!falling && !upPressed && !downPressed && !rightPressed && !leftPressed && !shiftPressed) {
-        velocity = velocity.subtract(velocity);
-        
-
-    //Leg Hover 
-
-    // let count = 0;
-    // for (let i = 0; i < spideyLegs.length; i++) {
-    //         if(legMods[i].anim === walking && count <= 1) {
-    //             count++;
-    //             //timestamp 
-    //             legMods[i].start += (1000 / 60);
-    //             //console.log(i, legMods[i].start, lastTimestamp)
-    //         }
-    //     }
+        velocity = velocity.subtract(velocity);  
     }
-    
 
+    // dash towards cursor 
+    // or else current move direction 
+    // if enemy is close, bite it 
+    // if web sac is close, eat it 
+    if (dashPressed){
+        dashPressed = false;
+        // console.log("Dash!")
+        if (lastTimestamp - dashCoolDown > 2000){
+            dashCoolDown = lastTimestamp;
+            if(!(falling && shiftPressed && layWeb)){
+            const grav = falling? 2 : 0
+                let speedx = speed.components[0] * 12;
+                let speedy = (speed.components[1] - grav) * 12;
+                if((LMBHeld || RMBHeld) && cursorPos.length() > spideyRadius*0.5) {
+                    speedx = cursorPos.components[0];
+                    speedy = cursorPos.components[1] - grav;
+                }
+                setSpeed(speedx, speedy);
+            }
+        }
+    }
     //jumping:
     // hold jump to charge
     //  -> Charge max 0.5s
@@ -3286,7 +4363,7 @@ function update(timestamp) {
             curYPos = spideyPos.y;
         }
         
-        if (!falling && !spaceHeld && lastTimestamp - jumpCoolDown > 600) {
+        if (!spaceHeld && lastTimestamp - jumpCoolDown > 600) {
             
         for(let i=0; i < legMods.length; i++) {
             if(legMods[i].anim < grabWeb && legMods[i].anim !== jumping) {
@@ -3298,7 +4375,6 @@ function update(timestamp) {
                 }
                 legMods[i].anim = jumping;
                 legMods[i].start = lastTimestamp; 
-                jumpSFX(i)
                 //}
                 const xval = spideyJump[i].x - spideyLegs[i].x;
                 const yval = spideyJump[i].y - spideyLegs[i].y;
@@ -3306,13 +4382,24 @@ function update(timestamp) {
                 // legMods[i].y = yval;
                 legMods[i].dx = xval;
                 legMods[i].dy = yval;
+                if (!falling || (shiftPressed && layWeb)){
+                    jumpSFX(i)
+                }
                 }
             }
-            let speedx = speed.components[0] * 2 ;
-            let speedy = (speed.components[1] - 10) * 3;
+            if (!falling || (shiftPressed && layWeb)){
+                let speedx = speed.components[0] * 2 ;
+                let speedy = (speed.components[1] - 20) * 3;
+                // delta because speed is already * dT 
+                // so modified components need normalization before setSpeed
+                setSpeed(speedx / deltaTime, speedy / deltaTime);
+            }
+            if (falling && (shiftPressed && layWeb)){
+                layWeb = false;
+                //shiftPressed = false
+            }
             //console.log(jumpCoolDown, lastTimestamp);
 
-            setSpeed(speedx / deltaTime, speedy / deltaTime);
 
             jumpCoolDown = lastTimestamp;
         } else if(falling) {
@@ -3342,9 +4429,7 @@ function update(timestamp) {
         // const jump = new Vector(speedx, speedy);
         // speed = jump;
         } 
-
 }
-
 
 //setInterval(update, 1000/60);
 //alternate...
@@ -3375,6 +4460,7 @@ var rightPressed = false;
 var leftPressed = false;
 var spacePressed = false;
 var shiftPressed = false;
+var dashPressed = false;
 var dipPressed = false;
 var scrollUp = false;
 var scrollDown = false;
@@ -3413,8 +4499,11 @@ function wheelHandler(e) {
         jactive = !jactive;
         e.preventDefault();
     }
+    if (e.key === "e" || e.key === "E" || e.key === "Enter") {
+        dashPressed = true;
+    }
     
-    if (e.key === " " || e.key === "_" || e.key === "e") {
+    if (e.key === " " || e.key === "_") {
         spacePressed = true;
         e.preventDefault();
     } else if (e.key === "v" || e.key === "q" || e.key === "-") {
