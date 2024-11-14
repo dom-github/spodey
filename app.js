@@ -1040,6 +1040,8 @@ function ongoingTouchIndexById(idToFind) {
 function touchStart(evt) {
 
     if(!firstclick && startgame){
+        //hack to hide URL in mobile web?
+        window.scrollTo(0, 1);
         document.removeEventListener("pointerlockchange", lockChangeAlert, false); //we on mobile!!
         // document.removeEventListener("wheel", wheelHandler, false);
         // document.removeEventListener("keydown", keyDownHandler, false);
