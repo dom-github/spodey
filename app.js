@@ -537,7 +537,7 @@ function mousedown(e){
                 switch (clickID) {
                     case startButton:
                         console.log("Start!")
-                        scaleSpidey(30);
+                        scaleSpidey(33);
                         scaleWorld(8);
                         startgame = false;
                         skipMouseInput = true;

@@ -1,0 +1,15 @@
+{
+    "short_name": "Spidey",
+    "name": "Spider Game",
+    "icons": [
+      {
+        "src": "./img/favico.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      }
+    ],
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "theme_color": "#ffffff",
+    "background_color": "#AACFFF"
+  }
