@@ -36,21 +36,35 @@ canvas.height = window.innerHeight;
 
 let worldScale = 1;
 //const worldCanvas = {width: canvas.width, height: canvas.height}
-// canvas.width *= worldScale;
-// canvas.height *= worldScale;
-// background.width *= worldScale;
-// background.height *= worldScale;
 //context.save();
 
 
 window.onresize = setDim;
 function setDim() {
 
+
+    console.log("Viewport=",viewport,"canvas=",canvas,"background=",background)
+    //reinit
+    const curWScale = worldScale;
+    scaleWorld(1);
+
     viewport.width =  window.innerWidth;
     viewport.height = window.innerHeight;
     
-    viewport.width = Math.max(400, viewport.width);
-    viewport.height = Math.max(300,viewport.height);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    background.width = window.innerWidth;
+    background.height = window.innerHeight;
+    
+
+    // context.width = window.innerWidth;
+    // context.height = window.innerHeight;
+    // bgctx.width = window.innerWidth;
+    // bgctx.height = window.innerHeight;
+    scaleWorld(curWScale);
+    
+    // viewport.width = Math.max(400, viewport.width);
+    // viewport.height = Math.max(300,viewport.height);
     
 }
 context.scale(worldScale, worldScale)
@@ -688,7 +702,7 @@ function startWeb(){
             if(x.p3){
                 if(
                 pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
-                || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                || pointInTriangle({x: tx, y: ty}, x.p5, x.p4, x.p6)
                 ) {
                     // console.log("startweb triangle");
                     webOrigin.x = tx;
@@ -848,7 +862,7 @@ function placeWeb(){
                         // console.log("triangle check");
                         if(
                         pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
-                        || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                        || pointInTriangle({x: tx, y: ty}, x.p5, x.p4, x.p6)
                         ) {
                             // console.log("placeweb triangle");
                             walkArea = true;
@@ -937,7 +951,7 @@ function drawCursor() {
     } 
 }
 
-
+console.log(viewport.requestPointerLock())
 viewport.addEventListener("click", async () => {
     if (!document.pointerLockElement) {
     await viewport.requestPointerLock({
@@ -1040,8 +1054,6 @@ function ongoingTouchIndexById(idToFind) {
 function touchStart(evt) {
 
     if(!firstclick && startgame){
-        //hack to hide URL in mobile web?
-        window.scrollTo(0, 1);
         document.removeEventListener("pointerlockchange", lockChangeAlert, false); //we on mobile!!
         // document.removeEventListener("wheel", wheelHandler, false);
         // document.removeEventListener("keydown", keyDownHandler, false);
@@ -1129,14 +1141,17 @@ function touchStart(evt) {
             cursorPos = new Vector(mouseCursor.x, mouseCursor.y)
             cursorPos = cursorPos.scaleBy(Math.min(1,spideyRadius / cursorPos.length()))
         } else if(region === ttMove){
-            upPressed = false;
-            downPressed = false;
-            rightPressed = false;
-            leftPressed = false;
-            if(origY < ongoingTouches[idx].clientY) downPressed = true;
-            if(origY > ongoingTouches[idx].clientY) upPressed = true;
-            if(origX < ongoingTouches[idx].clientX) rightPressed = true;
-            if(origX > ongoingTouches[idx].clientX) leftPressed = true;
+            upPressed = 0.0;
+            downPressed = 0.0;
+            rightPressed = 0.0;
+            leftPressed = 0.0;
+            const xchng = origX - ongoingTouches[idx].clientX
+            const ychng = origY - ongoingTouches[idx].clientY
+            console.log("Chng", xchng, ychng)
+            if(ychng > 1) upPressed = Math.min(1, Math.abs(ychng) / spideyRadius);
+            if(ychng < -1) downPressed = Math.min(1, Math.abs(ychng) / spideyRadius);
+            if(xchng < -1) rightPressed = Math.min(1, Math.abs(xchng) / spideyRadius);
+            if(xchng > 1) leftPressed = Math.min(1, Math.abs(xchng) / spideyRadius);
 
         }
 
@@ -1159,10 +1174,10 @@ function touchStart(evt) {
         if(ongoingTouches[idx].input === ttRight) mouseup({button: 2})
         if(ongoingTouches[idx].input === ttLeft) mouseup({button: 0})
         if(ongoingTouches[idx].input === ttMove) {
-            upPressed = false;
-            downPressed = false;
-            rightPressed = false;
-            leftPressed = false;
+            upPressed = 0;
+            downPressed = 0;
+            rightPressed = 0;
+            leftPressed = 0;
         }
         ongoingTouches.splice(idx, 1); // remove it; we're done
       } else {
@@ -1242,7 +1257,7 @@ function addBoundaries() {
 
 // ground
 const id = areaBoxes.length;
-scnObj.push({id: id, type: ground, length: 1});
+scnObj.push({id: id, type: ground, length: 1, min: {x: 0, y: 0}, max: {x: worldSize.width, y: worldSize.height}});
 areaBoxes.push({p1: {x: 0, y: worldSize.height}, p2: {x: worldSize.width, y: worldSize.height - groundHeight}});
 boundaryColliders.push({p1: {x: 0, y: worldSize.height - groundHeight},p2: {x: worldSize.width, y: worldSize.height - groundHeight}, solid: false});
 
@@ -1256,7 +1271,7 @@ for(let i=333;i<worldSize.width+333;i+=300){
     const ground = worldSize.height - groundHeight + 15;
     const height = ground - worldSize.height * Math.random() + 15;
     //console.log(type)
-    enemies.push({type: 0, x: i, y: height, start: 1000 *  Math.random(), dx: i, dy: height, active: true, anim: flying});
+    //enemies.push({type: 0, x: i, y: height, start: 1000 *  Math.random(), dx: i, dy: height, active: true, anim: flying});
     if (type < 0.25){
             
         } else if (type < 0.15) {
@@ -1381,7 +1396,6 @@ function drawRockMed(x,y,s,r){
     const col = false;
 
     const id = boundaryColliders.length;
-    scnObj.push({id: id, length: 4, type: rockMed});
     
     // // bottom
     // boundaryColliders.push({p1: {x: leftSide, y: y}, p2: {x: rightSide + width/2, y: y}, solid: col});
@@ -1398,6 +1412,24 @@ function drawRockMed(x,y,s,r){
     areaBoxes.push({p1: {x: Math.min(leftSide + width/2, rightSide), y: y}, p2: {x: Math.max(leftSide + width/2, rightSide), y: top + height/4}})
  
 
+    const ab = setAABB(id, 4)
+
+    scnObj.push({id: id, length: 4, type: rockMed, min: ab.min, max: ab.max});
+
+}
+
+function setAABB(id, len){
+    const min = {x: 0, y: 0}
+    const max = {x: 0, y: 0}
+    //get the bounding box values
+    for(i=0; i<len; i++){
+        const col = boundaryColliders[id+i]
+        min.x = Math.min(min.x, Math.min(col.p1.x, col.p2.x))
+        min.y = Math.min(min.y, Math.min(col.p1.y, col.p2.y))
+        max.x = Math.max(min.x, Math.max(col.p1.x, col.p2.x))
+        max.y = Math.max(min.y, Math.max(col.p1.y, col.p2.y))
+    }
+    return {min, max}
 }
 
 //id is the array ID from 1st boundary + number of boundaries in obj
@@ -1442,7 +1474,6 @@ function drawStopSign(x,y,s){
 
     const id = boundaryColliders.length;
     const circID = areaCircles.length;
-    scnObj.push({id: id, length: 10, type: stopSign});
     //pole
     boundaryColliders.push({p1: {x: leftSide, y: y}, p2: {x: leftSide, y: top}, solid: col});
     boundaryColliders.push({p1: {x: rightSide, y: top}, p2: {x: rightSide, y: y}, solid: col});
@@ -1465,6 +1496,9 @@ function drawStopSign(x,y,s){
     
     areaCircles.push({x: x, y: top - sideLength - (sideLength * 0.8), r: sideLength * 1.8, half: false, solid: true});
     //boundaryCircles.push({x: x, y: top - sideLength - (sideLength * 0.8), r: sideLength * 1.8, half: false, solid: false});
+
+    const ab = setAABB(id, 10);
+    scnObj.push({id: id, length: 10, type: stopSign, min: ab.min, max: ab.max});
 }
 
 function paintStopSign(id, len){
@@ -1589,7 +1623,7 @@ function drawTree(x, y, s, seg, ang){
 
         //area collision for big tree only
         if(s > spideyRadius/2){
-            areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: dsx + s + (j*2), y: dsy}})
+            areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: dsx + top + (j*2), y: dsy}})
         } 
         
         len += 1;
@@ -1637,7 +1671,8 @@ function drawTree(x, y, s, seg, ang){
     }
 
 
-    scnObj.push({id: id, length: len, type: tree});
+    const ab = setAABB(id, len);
+    scnObj.push({id: id, length: len, type: tree, min: ab.min, max: ab.max});
 
     //draw branches
         for(let m=0, count=seg, lid=id;m<count;m++){
@@ -1648,7 +1683,7 @@ function drawTree(x, y, s, seg, ang){
                 const prot1 = rotate_point(x, y, -angR, {...cur.p2});
                 //const prot2 =  cur.p2);
                 //console.log("ID:", id, "Seg:", seg, "Loop:", m)
-                const top = m+1 === seg ?  0.45 : Math.min(0.33, 0.05 + (0.10 * (m+1)))
+                const top = m+1 === seg ?  0.45 : Math.min(0.30, 0.05 + (0.10 * (m+1)))
                 if(Math.random() > 0.25){
                     const prot2 = rotate_point(x, y, angR, {x: prot1.x + (s*top) + m, y: prot1.y});
                     //console.log("tree", prot2.x, prot2.y, s*0.5, count-1-m, rotR + ang)
@@ -1806,7 +1841,6 @@ function paintTree(id, len){
         
         const id = boundaryColliders.length;
         const circID = boundaryCircles.length;
-        scnObj.push({id: id, length: 12, circID: circID, circLen: 3, type: cactus});
 
         //central trunk
         areaBoxes.push({p1: {x: leftSide + offset, y: y}, p2: {x: rightSide - offset, y: top + (widthAbs * 0.5)}})
@@ -1864,6 +1898,9 @@ function paintTree(id, len){
     
         areaCircles.push({x: leftSide - armlength + width/4, y: y - arm2 - width/2 - armlength, r: widthAbs/4, half: true});
 
+        const ab = setAABB(id, 10);
+
+        scnObj.push({id: id, length: 12, circID: circID, circLen: 3, type: cactus, min: ab.min, max: ab.max});
 
         }
     // ex. 
@@ -2010,6 +2047,8 @@ function paintTree(id, len){
         bgctx.fillStyle = "#000000";
         bgctx.strokeStyle = "#000000";
         bgctx.setLineDash([]);
+        bgctx.lineCap = "butt";
+        bgctx.lineWidth = 1;
     }
 
 const audioCtx = new AudioContext;
@@ -2077,7 +2116,7 @@ function checkCollision(tx, ty, r){
                 if(x.p3){
                     if(
                     pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p3)
-                    || pointInTriangle({x: tx, y: ty}, x.p5, x.p6, x.p4)
+                    || pointInTriangle({x: tx, y: ty}, x.p5, x.p4, x.p6)
                     ) {
                         collision = id;
                     }
@@ -2223,7 +2262,7 @@ function spideyMove(leg) {
                 if(x.p3){
                     if(
                     pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p6, x.p3)
-                    || pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p6, x.p4)
+                    || pointInTriangle({x: legPosX, y: legPosY}, x.p5, x.p4, x.p6)
                     ) {
                         //console.log("Spideymove triangle");
                         walkArea = true;
@@ -2239,11 +2278,13 @@ function spideyMove(leg) {
         if(!walkArea){
             for(let i=0; i<walkLines.length; i++){
                 if (walkLines[i].valid) {
-                const dist = distToSegmentSquared({x: rotate.x, 
+                    const dist = distToSegmentSquared({x: rotate.x, 
                     y: rotate.y},
                     walkLines[i].p1, walkLines[i].p2)
                         //if (line >= 0) console.log("Closest:", line, dist)
-                    if (dist < nearest) {
+                    if (dist < nearest 
+                        && distToSegment({x:0, y:0}, walkLines[i].p1, walkLines[i].p2)
+                        <= spideyRadius*Math.min(1.33, spiScl)) {
                         line = i;
                         nearest = dist;
                     }
@@ -2310,7 +2351,7 @@ function spideyMove(leg) {
                 legMods[leg].x = legMods[leg].jx;
                 legMods[leg].y = legMods[leg].jy;
                 legMods[leg].dx = 0;
-                legMods[leg].dy = 0//-15 * spiScl * Math.min(1.33, Math.max(spiScl, 0.5));
+                legMods[leg].dy = -spideyRadius*0.15;//-15 * spiScl * Math.min(1.33, Math.max(spiScl, 0.5));
                 //fallSFX(leg+8)
             }
             
@@ -3294,13 +3335,13 @@ function drawSpidey(x, y) {
     let eo = 0;
     //pupil offset (x)
     let po = 0;
-    if (upPressed) eo = -0.5;
-    if (downPressed) eo = 0.5;
-    if (rightPressed) po = 0.5;
-    if (leftPressed) po = -0.5;
+    if (upPressed) eo = -0.55 * upPressed;
+    if (downPressed) eo = 0.55 * downPressed;
+    if (rightPressed) po = 0.55 * rightPressed;
+    if (leftPressed) po = -0.55 * leftPressed;
     if(RMBHeld || LMBHeld){
-        po = cursorPos.components[0] / spideyRadius * 0.5
-        eo = cursorPos.components[1] / spideyRadius * 0.5
+        po = cursorPos.components[0] / spideyRadius * 0.55
+        eo = cursorPos.components[1] / spideyRadius * 0.55
     }
     context.fillStyle = "#ffffff";
     context.fillCircle(x - (4 + (2 * xrotation/spideyRadius)) * spiScl, y - (2 + (-2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
@@ -3934,7 +3975,7 @@ function gravity() {
                 // context.moveTo(walkLines[line].p1.x + spideyPos.x,walkLines[line].p1.y + spideyPos.y);
                 // context.lineTo(walkLines[line].p2.x + spideyPos.x,walkLines[line].p2.y + spideyPos.y);
                 // context.stroke();
-                // //context.strokeStyle = "#332299"
+                // //context.strokeStyle = "#366299"
                 // context.beginPath();
                 // context.moveTo(walkLines[line].p2.x + spideyPos.x,walkLines[line].p2.y + spideyPos.y);
                 // context.lineTo(x.p2.x, x.p2.y);
@@ -4350,7 +4391,7 @@ let logoA = [{x: 236, y: 330}, {x: 286, y: 216}, {x: 361, y: 323}];
 let logoM = [{x: 400, y: 329}, {x: 412, y: 217}, {x: 450, y: 250}, {x: 501, y: 222}, {x: 498, y: 329}, {x: 454, y: 285}];
 let logoE2 = [{x: 563, y: 333}, {x: 563, y: 235}, {x: 628, y: 244}, {x: 593, y: 268}, {x: 621, y: 291}, {x: 590, y: 305}, {x: 625, y: 330}];
 let logoText = [logoS, logoP, logoI, logoD, logoE, logoR, logoG, logoA, logoM, logoE2]
-
+//561 width
 
 
 
@@ -4422,15 +4463,15 @@ function move() {
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawEnemies(){
     
-    // if (enemies.length === 0 || enemies.every((x) => {return !x.active})) {
-       // enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
-    //    enemies.push({type: 2, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
-    //     for(let i=0;i<1001;i++){
-    //         //enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
-    //         enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
+    if (!startgame && (enemies.length === 0 || enemies.every((x) => {return !x.active}))) {
+       enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
+       enemies.push({type: 2, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
+        for(let i=0;i<1001;i++){
+            //enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
+            enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
 
-    //     }
-    // }
+        }
+    }
     enemies.forEach((x) => {
         if(x.active
             && x.x > spideyPos.x - viewport.width
@@ -4450,7 +4491,6 @@ function drawEnemies(){
                         break
                 default: drawFly(x);
             }
-            
         }
         
     })
@@ -4461,21 +4501,31 @@ function drawObjects(){
     //if(!jactive) {
     scnObj.forEach((x) => {
         if(x.type === ground){
-            //
-            paintGround(x.id, x.length);            
-        } else if(x.type === rockMed){
-            //
-            paintRockMed(x.id, x.length); 
-        } else if(x.type === stopSign){
-            paintStopSign(x.id, x.length);  
-            
-        }   else if(x.type === cactus){
-            paintCactus(x.id, x.length, x.circID, x.circLen);  
-            
-        }   else if(x.type === tree){
-            paintTree(x.id, x.length, x.circID, x.circLen);  
-            
-        }        
+                //          
+                paintGround(x.id, x.length);  
+            }
+        if(
+            x.max.x > spideyPos.x - viewport.width
+            && x.min.x < spideyPos.x + viewport.width
+            && x.max.y > spideyPos.y - viewport.height
+            && x.min.y < spideyPos.y + viewport.height){
+            //animate
+            switch (x.type){
+                case rockMed:
+                    paintRockMed(x.id, x.length); 
+                    break
+                case stopSign:
+                    paintStopSign(x.id, x.length);  
+                    break
+                case tree:
+                    paintTree(x.id, x.length, x.circID, x.circLen);  
+                    break
+                case cactus:
+                    paintCactus(x.id, x.length, x.circID, x.circLen);  
+                    break
+                default: paintRockMed(x.id, x.length);
+            }
+        }
     })
     //}
 }
@@ -4726,8 +4776,8 @@ function update(timestamp) {
                         console.log(x)
                         let tgt = id < letter.length-1 ? id+1 : 0
                         webArray.push({
-                            p1: {x: x.x + w*0.3, y: x.y+60}, 
-                            p2: {x: letter[tgt].x + w*0.3, y: letter[tgt].y+60},
+                            p1: {x: x.x + w*0.5 - 366, y: x.y+60}, 
+                            p2: {x: letter[tgt].x + w*0.5 - 366, y: letter[tgt].y+60},
                             solid: false, 
                             stuck: [], 
                             vibros: [], 
@@ -4739,12 +4789,12 @@ function update(timestamp) {
                             let tgt2 = id === 0 ? id+1 : 0
                             projectiles.push({
                                 type: 3, 
-                                x: x.x + w*0.3, 
+                                x: x.x + w*0.5 - 366, 
                                 y: x.y+60, 
                                 speedx: (x.x - letter[tgt2].x)*0.1 * Math.random(), 
                                 speedy: (x.y - letter[tgt2].y)*0.1 - Math.random(), 
                                 start: lastTimestamp,
-                                ox: x.x + w*0.3, 
+                                ox: x.x + w*0.5 - 366, 
                                 oy: x.y+60, 
                             })
                         }
@@ -4772,7 +4822,7 @@ function update(timestamp) {
                 context.textAlign = "center";
                 context.font = "48px Arial Narrow";
                 context.fillStyle = "#fff";
-                    context.fillText("<Click to begin>", w * 0.5, h * 0.5);
+                    context.fillText("< P L A Y >", w * 0.5, h * 0.5);
                 }
 
 
@@ -4786,11 +4836,11 @@ function update(timestamp) {
                 context.strokeStyle = `rgba(255, 255, 255, ${curs})`;
                 context.fillStyle = invsky;
                 context.beginPath();
-                context.moveTo(letter[0].x + w * 0.3, letter[0].y+60)
+                context.moveTo(letter[0].x + w*0.5 - 366, letter[0].y+60)
                 letter.forEach((x)=>{
-                    context.lineTo(x.x +w * 0.3 , x.y+60)
+                    context.lineTo(x.x + w*0.5 - 366 , x.y+60)
                 })
-                context.lineTo(letter[0].x + w * 0.3, letter[0].y+60)
+                context.lineTo(letter[0].x + w*0.5 - 366, letter[0].y+60)
                 context.fill()
                 context.stroke()
             })
@@ -4932,18 +4982,18 @@ function update(timestamp) {
 function noinput (){ return !upPressed && !downPressed && !rightPressed && !leftPressed && !shiftPressed && !spacePressed};
 function processInput () {
     if(upPressed && !downPressed && (!falling || falling && layWeb && shiftPressed)) {
-        setSpeed(0, -1 * Math.min(1, spiScl));
+        setSpeed(0, -upPressed * Math.min(1, spiScl));
         
     }
     if(downPressed && !upPressed) {
-        setSpeed(0, 1 * spiScl);
+        setSpeed(0, downPressed * spiScl);
     }
 
     if(rightPressed && !leftPressed) {
-        setSpeed(1 * spiScl, 0);
+        setSpeed(rightPressed * spiScl, 0);
     }
     if(leftPressed && !rightPressed) {
-        setSpeed(-1 * spiScl, 0);
+        setSpeed(-leftPressed * spiScl, 0);
     }
 
 
@@ -5082,10 +5132,10 @@ function drawFrame () {
 drawFrame();
 
 //input handlers
-var upPressed = false;
-var downPressed = false;
-var rightPressed = false;
-var leftPressed = false;
+var upPressed = 0.0;
+var downPressed = 0.0;
+var rightPressed = 0.0;
+var leftPressed = 0.0;
 var spacePressed = false;
 var shiftPressed = false;
 var dashPressed = false;
@@ -5108,19 +5158,19 @@ function wheelHandler(e) {
         
     }
     if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-        rightPressed = true;
+        rightPressed = 1.0;
         e.preventDefault();
     }
     if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-        leftPressed = true;
+        leftPressed = 1.0;
         e.preventDefault();
     }
     if (e.key === "Up" || e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
-        upPressed = true;
+        upPressed = 1.0;
         e.preventDefault();
     }
     if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
-        downPressed = true;
+        downPressed = 1.0;
         e.preventDefault();
     }
     if (e.key === "j" || e.key === "J") {
@@ -5166,16 +5216,16 @@ function wheelHandler(e) {
 }
     function keyUpHandler(e) {
     if (e.key === "Right" || e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-        rightPressed = false;
+        rightPressed = 0.0;
     } else if (e.key === "Left" || e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-        leftPressed = false;
+        leftPressed = 0.0;
     }
     if (e.key === "Up" || e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
-        upPressed = false;
+        upPressed = 0.0;
     } else if (e.key === "Down" || e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
-        downPressed = false;
+        downPressed = 0.0;
     }
-    if (e.key === " " || e.key === "_" || e.key === "e" || e.key === "E") {
+    if (e.key === " " || e.key === "_") {
         spacePressed = false;
     } else if (e.key === "v" || e.key === "q" || e.key === "-") {
         dipPressed = false;
