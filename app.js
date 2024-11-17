@@ -48,7 +48,6 @@ function setDim() {
 
     const curWScale = worldScale;
     scaleWorld(1);
-
     viewport.width =  window.innerWidth;
     viewport.height = window.innerHeight;
     
@@ -62,8 +61,22 @@ function setDim() {
     background.height = window.innerHeight;
     
 
+    // original values
+    // let logoWidth = 664 + 103;
+    // let logoHeight = 342;
+    const diffw = 664 / logoWidth;
+    const diffh = 342 / logoHeight;
+    //nasty reset
+    logoWidth = 664;
+    logoHeight = 342;
+    logoText.forEach((letter)=>{
+        letter.forEach((x)=>{
+            x.x *= diffw;
+            x.y *= diffh;
+        })
+    })
     if(startgame) {
-        mousePosition = {x: viewport.width * 0.5, y: viewport.height * 0.5}
+        mousePosition = {x: window.innerWidth * 0.5, y: window.innerHeight * 0.5}
         initScene();
         UIBoundaries();
         if(viewport.width < logoWidth){
@@ -77,7 +90,19 @@ function setDim() {
                 })
             })
         }
-        firstclick = lastTimestamp;
+        if(viewport.height - 80 < logoHeight){
+            const maxw = (viewport.height - 80) / logoHeight;
+            logoWidth *= maxw;
+            logoHeight *= maxw;
+            logoText.forEach((letter)=>{
+                letter.forEach((x)=>{
+                    x.x *= maxw;
+                    x.y *= maxw;
+                })
+            })
+        }
+        firstclick = mouseFocus ? lastTimestamp - firstclick : 0;
+        // mouseFocus = true;
     }
     // context.width = window.innerWidth;
     // context.height = window.innerHeight;
@@ -4637,6 +4662,17 @@ if(viewport.width < 664){
         })
     })
 }
+if(viewport.height < 342){
+    const maxw = viewport.height / 342;
+    logoWidth *= maxw;
+    logoHeight *= maxw;
+    logoText.forEach((letter)=>{
+        letter.forEach((x)=>{
+            x.x *= maxw;
+            x.y *= maxw;
+        })
+    })
+}
 
 
 //for mobile:
@@ -4733,7 +4769,7 @@ function update(timestamp) {
         invsky.addColorStop(0.5, `rgba(2, 82, 255, ${curs})`);
         invsky.addColorStop(1, `rgba(0, 23, 73, ${curs})`);
         if(timer){
-            const xoff = h * 0.6 < logoHeight ? viewport.width*0.25 : 0;
+            const xoff = h * 0.5 < logoHeight ? viewport.width*0.25 : 0;
             const yoff = viewport.height < logoHeight*2 ? 0 : 120;
             const ystart = viewport.height < logoHeight*2 ? viewport.height - 20 : h * 0.6;
             const p = 8;
@@ -4764,16 +4800,17 @@ function update(timestamp) {
             uictx.fillText("START", w * 0.5 - xoff, ystart);
             uictx.fillText("OPTIONS", w * 0.5 + xoff, ystart + yoff);
             uictx.fillText("EXIT", w * 0.5 + xoff*4, ystart + (yoff*2));
-            const buttonHover = checkCollision(spideyPos.x, spideyPos.y, 5)
-            if(buttonHover === startButton || buttonHover === optionsButton || buttonHover === quitButton) {
-                const x = areaBoxes[buttonHover];
-                uictx.lineWidth = 8;
-                uictx.strokeStyle = "#ffffff"
-                uictx.beginPath();
-                uictx.roundRect(x.p1.x, x.p2.y, x.p2.x-x.p1.x, x.p1.y-x.p2.y, 0);
-                uictx.stroke();
+            if(areaBoxes.length > 0){
+                const buttonHover = checkCollision(spideyPos.x, spideyPos.y, 5)
+                if(buttonHover === startButton || buttonHover === optionsButton || buttonHover === quitButton) {
+                    const x = areaBoxes[buttonHover];
+                    uictx.lineWidth = 8;
+                    uictx.strokeStyle = "#ffffff"
+                    uictx.beginPath();
+                    uictx.roundRect(x.p1.x, x.p2.y, x.p2.x-x.p1.x, x.p1.y-x.p2.y, 0);
+                    uictx.stroke();
+                }
             }
-
             if(curs === 1 && webArray.length === 0){
                 areaBoxes.push({p1: {x: w * 0.5 - box1w - xoff - p*0.5, y: ystart + p}, 
                     p2: {x: w * 0.5 + box1w - xoff + p, y: ystart - box1h - p}});
