@@ -42,21 +42,43 @@ let worldScale = 1;
 window.onresize = setDim;
 function setDim() {
 
-
     console.log("Viewport=",viewport,"canvas=",canvas,"background=",background)
     //reinit
+
+
     const curWScale = worldScale;
     scaleWorld(1);
 
     viewport.width =  window.innerWidth;
     viewport.height = window.innerHeight;
     
+    UI.width =  window.innerWidth;
+    UI.height = window.innerHeight;
+    uictx.width =  window.innerWidth;
+    uictx.height = window.innerHeight;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     background.width = window.innerWidth;
     background.height = window.innerHeight;
     
 
+    if(startgame) {
+        mousePosition = {x: viewport.width * 0.5, y: viewport.height * 0.5}
+        initScene();
+        UIBoundaries();
+        if(viewport.width < logoWidth){
+            const maxw = viewport.width / logoWidth;
+            logoWidth *= maxw;
+            logoHeight *= maxw;
+            logoText.forEach((letter)=>{
+                letter.forEach((x)=>{
+                    x.x *= maxw;
+                    x.y *= maxw;
+                })
+            })
+        }
+        firstclick = lastTimestamp;
+    }
     // context.width = window.innerWidth;
     // context.height = window.innerHeight;
     // bgctx.width = window.innerWidth;
@@ -64,8 +86,7 @@ function setDim() {
     scaleWorld(curWScale);
     
     // viewport.width = Math.max(400, viewport.width);
-    // viewport.height = Math.max(300,viewport.height);
-    
+    // viewport.height = Math.max(300,viewport.height);    
 }
 context.scale(worldScale, worldScale)
 bgctx.scale(worldScale, worldScale)
@@ -99,6 +120,14 @@ function checkZooming() {
 }
 
 window.addEventListener('resize', checkZooming)
+
+// document.addEventListener("visibilitychange", (event) => {
+//     if (document.visibilityState == "visible") {
+//       console.log("tab is active")
+//     } else {
+//       console.log("tab is inactive")
+//     }
+//   });
 
 // usage
 window.addEventListener('zoom', (e) => {
@@ -547,27 +576,20 @@ function mousedown(e){
     if(mouseFocus) {
         if(startgame){
             const clickID = checkCollision(mousePosition.x, mousePosition.y, 5)
-            if(clickID > -1){
-                switch (clickID) {
-                    case startButton:
-                        console.log("Start!")
-                        scaleSpidey(33);
-                        scaleWorld(8);
-                        startgame = false;
-                        skipMouseInput = true;
-                        initScene();
-                        spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
-                        break;
-                    case optionsButton:
+            const tapID = checkCollision(e.clientX, e.clientY, 5)
+            if(clickID === startButton || tapID === startButton){
+                console.log("Start!")
+                scaleSpidey(33);
+                scaleWorld(8);
+                startgame = false;
+                skipMouseInput = true;
+                initScene();
+                addBoundaries();
+                spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
+            } else if(clickID ===  optionsButton){
                         console.log("Options!")
-                        break;
-                    case quitButton:
+            }else if(clickID ===  quitButton){
                         console.log("Quit!")
-                        break;
-                
-                    default:
-                        break;
-                }
             }
         }
         // const w = viewport.width;
@@ -653,6 +675,10 @@ function mousedown(e){
     
 }
 function mouseup(e){
+
+    if(startgame){
+
+    }
     if (skipMouseInput){skipMouseInput=false;} else {
         
     //console.log(e)
@@ -787,7 +813,7 @@ function launchWeb(leg){
         }
         //console.log(other)
         
-        if (!layWeb || (layWeb && shiftPressed)){
+        if (!layWeb || (falling && layWeb && shiftPressed)){
             const type = other >= 0 ? 0 : 1;
             const spos = type === 1 ? 1 : 0.5;
             if (type) scaled = scaled.scaleBy(0.9)
@@ -951,7 +977,6 @@ function drawCursor() {
     } 
 }
 
-console.log(viewport.requestPointerLock())
 viewport.addEventListener("click", async () => {
     if (!document.pointerLockElement) {
     await viewport.requestPointerLock({
@@ -983,11 +1008,11 @@ function lockChangeAlert() {
     if (document.pointerLockElement === viewport) {
         mouseFocus = true;
         if(!firstclick && startgame) firstclick = lastTimestamp;
-        //console.log("The pointer lock status is now locked");
+        console.log("The pointer lock status is now locked");
         document.addEventListener("mousemove", mouseMove, false);
     } else {
         mouseFocus = false;
-        //console.log("The pointer lock status is now unlocked");
+        console.log("The pointer lock status is now unlocked");
         document.removeEventListener("mousemove", mouseMove, false);
     }
 }
@@ -1379,6 +1404,20 @@ function paintGround(id, length){
     bgctx.fillStyle = "#000000";
 };
 
+function setAABB(id, len){
+    const min = {x: 0, y: 0}
+    const max = {x: 0, y: 0}
+    //get the bounding box values
+    for(i=0; i<len; i++){
+        const col = boundaryColliders[id+i]
+        min.x = Math.min(min.x, Math.min(col.p1.x, col.p2.x))
+        min.y = Math.min(min.y, Math.min(col.p1.y, col.p2.y))
+        max.x = Math.max(max.x, Math.max(col.p1.x, col.p2.x))
+        max.y = Math.max(max.y, Math.max(col.p1.y, col.p2.y))
+    }
+    return {min, max}
+}
+
 //lets draw a rock
 //    /\
 //  /   |_ 
@@ -1409,27 +1448,30 @@ function drawRockMed(x,y,s,r){
     // left
     boundaryColliders.push({p1: {x: leftSide + width/2, y: top + height/8}, p2: {x: leftSide, y: y}, solid: col});
    
-    areaBoxes.push({p1: {x: Math.min(leftSide + width/2, rightSide), y: y}, p2: {x: Math.max(leftSide + width/2, rightSide), y: top + height/4}})
- 
+    //areaBoxes.push({p1: {x: Math.min(leftSide + width/2, rightSide), y: y}, p2: {x: Math.max(leftSide + width/2, rightSide), y: top + height/4}})
+    areaBoxes.push({
+        p1: {x: x, y: y}, 
+        p2: {x: rightSide + width/2, y: top}, 
+
+        p3: {x: x, y: top}, 
+        p4: {x: rightSide + width/2, y: y},
+        p5: {x: x, y: y}, 
+        p6: {x: rightSide, y: top + height/4}, 
+    })
+    areaBoxes.push({
+        p1: {x: leftSide, y: y}, 
+        p2: {x: x, y: top}, 
+        
+        p3: {x: leftSide + width/2, y: top + height/8}, 
+        p4: {x: x, y: y},
+        p5: {x: leftSide, y: y}, 
+        p6: {x: x, y: top}, 
+    })
 
     const ab = setAABB(id, 4)
 
     scnObj.push({id: id, length: 4, type: rockMed, min: ab.min, max: ab.max});
 
-}
-
-function setAABB(id, len){
-    const min = {x: 0, y: 0}
-    const max = {x: 0, y: 0}
-    //get the bounding box values
-    for(i=0; i<len; i++){
-        const col = boundaryColliders[id+i]
-        min.x = Math.min(min.x, Math.min(col.p1.x, col.p2.x))
-        min.y = Math.min(min.y, Math.min(col.p1.y, col.p2.y))
-        max.x = Math.max(min.x, Math.max(col.p1.x, col.p2.x))
-        max.y = Math.max(min.y, Math.max(col.p1.y, col.p2.y))
-    }
-    return {min, max}
 }
 
 //id is the array ID from 1st boundary + number of boundaries in obj
@@ -1491,7 +1533,7 @@ function drawStopSign(x,y,s){
 
     boundaryColliders.push({p1: {x: x + sideLength*1.8, y: top - sideLength*2.5}, p2: {x: x + sideLength*1.8, y: top - sideLength}, solid: col});
 
-    boundaryColliders.push({p1: {x: x + sideLength*1.8, y: top - sideLength}, p2: {x: x + sideLength * 0.9, y: top}, solid: col});
+    boundaryColliders.push({p1: {x: x + sideLength*1.8, y: top - sideLength}, p2: {x: x - 0.25 + sideLength * 0.9, y: top + 1.5}, solid: col});
 
     
     areaCircles.push({x: x, y: top - sideLength - (sideLength * 0.8), r: sideLength * 1.8, half: false, solid: true});
@@ -1683,7 +1725,7 @@ function drawTree(x, y, s, seg, ang){
                 const prot1 = rotate_point(x, y, -angR, {...cur.p2});
                 //const prot2 =  cur.p2);
                 //console.log("ID:", id, "Seg:", seg, "Loop:", m)
-                const top = m+1 === seg ?  0.45 : Math.min(0.30, 0.05 + (0.10 * (m+1)))
+                const top = m+1 === seg ?  0.45 : Math.min(0.45, 0.05 + (0.1 * (m+1)))
                 if(Math.random() > 0.25){
                     const prot2 = rotate_point(x, y, angR, {x: prot1.x + (s*top) + m, y: prot1.y});
                     //console.log("tree", prot2.x, prot2.y, s*0.5, count-1-m, rotR + ang)
@@ -1740,7 +1782,8 @@ function paintTree(id, len){
     //const obj = boundaryColliders[id]
     // bgctx.moveTo(left, obj.p1.y);
     // bgctx.lineTo(top, height);
-    bgctx.strokeStyle = "#563A27";
+    if(len > 3){
+        bgctx.strokeStyle = "#563A27";
     for(let i = id; i < id + (len/2); i++){
         const obj = boundaryColliders[i]
         const dx = obj.p1.x - boundaryColliders[(id + len-1) - (i-id)].p2.x;
@@ -1787,7 +1830,7 @@ function paintTree(id, len){
 
         }
     bgctx.setLineDash([]);
-    bgctx.lineWidth = 1.0;
+    bgctx.lineWidth = 1.0;}
 
     //roots
     // bgctx.beginPath();
@@ -3019,7 +3062,7 @@ function drawSpidey(x, y) {
         if (legMods[i].anim === jumping || legMods[i].anim === none || legMods[i].anim === swinging ) {
             
         
-            const stepSpeed = 16 + (500 * (Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2)))
+            const stepSpeed = 16 + (500 * (Math.trunc(Math.hypot(difx, dify)) / (spideyRadius)))
             const sec = Math.min(elapsed/stepSpeed, 1);  
             const step = sec * sec * (3-2 * sec);
 
@@ -3034,12 +3077,16 @@ function drawSpidey(x, y) {
             {
                 legMods[i].x = legMods[i].jx;
                 legMods[i].y = legMods[i].jy;
-            } else if (sec === 1) {
+            } else if (sec === 1 && legMods[i].anim !== none) {
                 //console.log("stopping:", ox, ex, oy, ey, sec);
                 legMods[i].x = legMods[i].dx;
                 legMods[i].y = legMods[i].dy;
                 legMods[i].start = 0;
-                legMods[i].anim = none;
+                if(legMods[i].anim === swinging) {
+                    legMods[i].anim = jumping;
+                    legMods[i].dx = spideyJump[i].x*0.75 - spideyLegs[i].x;
+                    legMods[i].dy = spideyJump[i].y*0.75 - spideyLegs[i].y;
+                }else{legMods[i].anim = none;}
                 //freeLeg = true;
             }
         }
@@ -3342,18 +3389,29 @@ function drawSpidey(x, y) {
     if(RMBHeld || LMBHeld){
         po = cursorPos.components[0] / spideyRadius * 0.55
         eo = cursorPos.components[1] / spideyRadius * 0.55
-    }
+    }    
+    // //secondary eyes
+    // context.fillStyle = "#aaa";
+    // context.fillCircle(x - (5.75 - po*0.15 + (2 * xrotation/spideyRadius)) * spiScl, y - (3.5 - eo*0.15 + (-3 * xrotation/spideyRadius)) * spiScl, 1.25 * spiScl);
+    // context.fillCircle(x + (5.75 + po*0.15 - (2 * xrotation/spideyRadius)) * spiScl, y - (3.5 - eo*0.15 + (3 * xrotation/spideyRadius)) * spiScl, 1.25 * spiScl);
+    // //pupils
+    // context.fillStyle = "#000000";
+    // context.fillCircle(x - (5.75 - po*0.33 + (2 * xrotation/spideyRadius)) * spiScl, y - (3.5 - eo*0.33 + (-3 * xrotation/spideyRadius)) * spiScl, 1 * spiScl);
+    // context.fillCircle(x + (5.75 + po*0.33 - (2 * xrotation/spideyRadius)) * spiScl, y - (3.5 - eo*0.33 + (3 * xrotation/spideyRadius)) * spiScl, 1 * spiScl);
+
+    //major eyes
     context.fillStyle = "#ffffff";
-    context.fillCircle(x - (4 + (2 * xrotation/spideyRadius)) * spiScl, y - (2 + (-2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
-    context.fillCircle(x + (4 - (2 * xrotation/spideyRadius)) * spiScl, y - (2 + (2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
+    context.fillCircle(x - (3.5 - po*0.5 + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo*0.5 + (-2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
+    context.fillCircle(x + (3.5 + po*0.5 - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo*0.5 + (2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
     //pupils
     context.fillStyle = "#000000";
-    context.fillCircle(x - (4 - po + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (-2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
-    context.fillCircle(x + (4 + po - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
+    context.fillCircle(x - (3.5 - po + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (-2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
+    context.fillCircle(x + (3.5 + po - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
+
 
     context.strokeStyle = "#ffffff";
     context.lineWidth = 0.5 * spiScl;
-    //fangs
+    //chelicerae
     if(lastTimestamp - dashCoolDown < 750){
         const bite = lastTimestamp - dashCoolDown > 500 ? 1 * spiScl :  2.5 * spiScl * (((lastTimestamp - dashCoolDown)%1000)/500);
         // let bob = (((lastTimestamp - dashCoolDown)%750)/500);
@@ -3365,29 +3423,29 @@ function drawSpidey(x, y) {
         //     legMods[l].y -= weave; 
         // }
         context.beginPath();
-        context.moveTo(x-3 * spiScl - bite + (2 * xrotation/spideyRadius), y+2.5 * spiScl - (-2 * xrotation/spideyRadius));
+        context.moveTo(x + po*0.5 -3 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5 +2.5 * spiScl - (-2 * xrotation/spideyRadius));
         context.bezierCurveTo(
-            x - 3 * spiScl - bite + (2 * xrotation/spideyRadius), y + 3 * spiScl - (-2 * xrotation/spideyRadius),
-            x - 4 * spiScl - bite + (2 * xrotation/spideyRadius), y + 5 * spiScl - (-2 * xrotation/spideyRadius),
-            x - 1 * spiScl - bite + (2 * xrotation/spideyRadius), y + 6 * spiScl - (-2 * xrotation/spideyRadius),
+            x + po*0.5  - 3 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 3 * spiScl - (-2 * xrotation/spideyRadius),
+            x + po*0.5  - 4 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 5 * spiScl - (-2 * xrotation/spideyRadius),
+            x + po*0.5  - 1 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 6 * spiScl - (-2 * xrotation/spideyRadius),
         );
         context.bezierCurveTo(
-            x - 2 * spiScl - bite + (2 * xrotation/spideyRadius), y + 4 * spiScl - (-2 * xrotation/spideyRadius),
-            x - 1.5 * spiScl - bite + (2 * xrotation/spideyRadius), y + 3.5 * spiScl - (-2 * xrotation/spideyRadius),
-            x - 1 * spiScl - bite + (2 * xrotation/spideyRadius), y + 3 * spiScl - (-2 * xrotation/spideyRadius),
+            x + po*0.5  - 2 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 4 * spiScl - (-2 * xrotation/spideyRadius),
+            x + po*0.5  - 1.5 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 3.5 * spiScl - (-2 * xrotation/spideyRadius),
+            x + po*0.5  - 1 * spiScl - bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 3 * spiScl - (-2 * xrotation/spideyRadius),
         );
         context.stroke();
         context.beginPath();
-        context.moveTo(x+3 * spiScl + bite + (2 * xrotation/spideyRadius), y+2.5 * spiScl - (2 * xrotation/spideyRadius));
+        context.moveTo(x + po*0.5+3 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5 +2.5 * spiScl - (2 * xrotation/spideyRadius));
         context.bezierCurveTo(
-            x + 3 * spiScl + bite + (2 * xrotation/spideyRadius), y + 3 * spiScl - (2 * xrotation/spideyRadius),
-            x + 4 * spiScl + bite + (2 * xrotation/spideyRadius), y + 5 * spiScl - (2 * xrotation/spideyRadius),
-            x + 1 * spiScl + bite + (2 * xrotation/spideyRadius), y + 6 * spiScl - (2 * xrotation/spideyRadius),
+            x + po*0.5 + 3 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 3 * spiScl - (2 * xrotation/spideyRadius),
+            x + po*0.5 + 4 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 5 * spiScl - (2 * xrotation/spideyRadius),
+            x + po*0.5 + 1 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 6 * spiScl - (2 * xrotation/spideyRadius),
         );
         context.bezierCurveTo(
-            x + 2 * spiScl + bite + (2 * xrotation/spideyRadius), y + 4 * spiScl - (2 * xrotation/spideyRadius),
-            x + 1.5 * spiScl + bite + (2 * xrotation/spideyRadius), y + 3.5 * spiScl - (2 * xrotation/spideyRadius),
-            x + 1 * spiScl + bite + (2 * xrotation/spideyRadius), y + 3 * spiScl - (2 * xrotation/spideyRadius),
+            x + po*0.5 + 2 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 4 * spiScl - (2 * xrotation/spideyRadius),
+            x + po*0.5 + 1.5 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 3.5 * spiScl - (2 * xrotation/spideyRadius),
+            x + po*0.5 + 1 * spiScl + bite + (2 * xrotation/spideyRadius), y + eo*0.5  + 3 * spiScl - (2 * xrotation/spideyRadius),
         );
         context.stroke();}
 
@@ -3528,8 +3586,8 @@ function gravity() {
     let testPos = position.add(velocity);
     
     //swinging
-    //removed hand swing ||count <8
-    if (falling && (layWeb) && shiftPressed) {
+    //removed hand swing 
+    if (falling && (layWeb||count <8) && shiftPressed) {
         
 
         let swingPoint = new Vector(webOrigin.x, webOrigin.y)
@@ -3540,18 +3598,20 @@ function gravity() {
             //context.fillCircle(rope.components[0], rope.components[1], 5)
             //console.log(position.subtract(swingPoint).length())
             for(let j=0; j < spideyLegs.length; j++) {
-                const scale =  (position.subtract(swingPoint).length() + (spideyJump[j].y/2) - spideyRadius*0.1) / position.subtract(swingPoint).length();
+                const scale =  (position.subtract(swingPoint).length() - Math.abs(spideyJump[j].x/2) - legOrigins[j].y - spideyRadius*0.1) / position.subtract(swingPoint).length();
                 let rope = position.subtract(swingPoint).scaleBy(scale).add(swingPoint)
                 
                     if(legMods[j].anim !== swinging && legMods[j].anim < grabWeb){
                         legMods[j].anim = swinging;
-                       // legMods[j].start = lastTimestamp - legMods[j].start;
+                        //legMods[j].start = lastTimestamp - legMods[j].start;
                         
-                        legMods[j].dx = rope.components[0] - spideyPos.x - spideyLegs[j].x;
-                        legMods[j].dy = rope.components[1] - spideyPos.y - spideyLegs[j].y;
+                        // legMods[j].x = rope.components[0] - spideyPos.x - spideyLegs[j].x;
+                        // legMods[j].y = rope.components[1] - spideyPos.y - spideyLegs[j].y;
+                        legMods[j].dx = j === 3 || j === 7 || j === 2 || j === 6 ? rope.components[0] - spideyPos.x - spideyLegs[j].x : spideyJump[j].x - spideyLegs[j].x;
+                        legMods[j].dy = j === 3 || j === 7 || j === 2 || j === 6  ? rope.components[1] - spideyPos.y - spideyLegs[j].y : spideyJump[j].y - spideyLegs[j].y;
                     } 
             }
-        }
+        } 
         //context.fillCircle(swingPoint.components[0], swingPoint.components[1], 5)
         if ((testPos.subtract(swingPoint).length()) > swingPoint.subtract(position).length())
         {
@@ -4353,48 +4413,6 @@ function drawWebs(){
 }
 
 
-//spider game text (negative webs)
-/*
-
---start, lines
-
-S - {114:140, 257:164, 184:87, 233:62, 146:75, 196:146},
-P - {271:173, 263:65, 330:92, 294:109, 272:174}
-I - {362:173, 345:122, 369:68,375:115} 
-D - {404:178, 412:74, 492:138}
-E - {500:188, 493:77, 556:90, 524:112, 553:131, 523:156, 556:182}
-R - {595:184, 585:83, 654:95, 630:124, 664:176,615:157}
-G - {126:342, 103:238, 176:195, 137:254, 139:316, 168:302, 174:283, 188:314}
-A - {236:330, 286:216, 361:323}
-M - {400:329, 412:217, 450:250, 501:222, 498:329, 454:285}
-E - {563:333, 563:235, 628:244, 593:268, 621:291, 590:305, 625:330}
-
-,
-
- 
-
-
-
-
-
-
-
-*/
-let logoS = [{x: 114, y: 140}, {x: 257, y: 164}, {x: 184, y: 87}, {x: 233, y: 62}, {x: 146, y: 75}, {x: 196, y: 146}];
-let logoP = [{x: 271, y: 173}, {x: 263, y: 65}, {x: 330, y: 92}, {x: 294, y: 109}, {x: 272, y: 174}];
-let logoI = [{x: 362, y: 173}, {x: 345, y: 122}, {x: 369, y: 68}, {x: 375, y: 115}];
-let logoD = [{x: 404, y: 178}, {x: 412, y: 74}, {x: 492, y: 138}];
-let logoE = [{x: 500, y: 188}, {x: 493, y: 77}, {x: 556, y: 90}, {x: 524, y: 112}, {x: 553, y: 131}, {x: 523, y: 156}, {x: 556, y: 182}];
-let logoR = [{x: 595, y: 184}, {x: 585, y: 83}, {x: 654, y: 95}, {x: 630, y: 124}, {x: 664, y: 176}, {x: 615, y: 157}];
-let logoG = [{x: 126, y: 342}, {x: 103, y: 238}, {x: 176, y: 195}, {x: 137, y: 254}, {x: 139, y: 316}, {x: 168, y: 302}, {x: 174, y: 283}, {x: 188, y: 314}];
-let logoA = [{x: 236, y: 330}, {x: 286, y: 216}, {x: 361, y: 323}];
-let logoM = [{x: 400, y: 329}, {x: 412, y: 217}, {x: 450, y: 250}, {x: 501, y: 222}, {x: 498, y: 329}, {x: 454, y: 285}];
-let logoE2 = [{x: 563, y: 333}, {x: 563, y: 235}, {x: 628, y: 244}, {x: 593, y: 268}, {x: 621, y: 291}, {x: 590, y: 305}, {x: 625, y: 330}];
-let logoText = [logoS, logoP, logoI, logoD, logoE, logoR, logoG, logoA, logoM, logoE2]
-//561 width
-
-
-
 
 let velocity = new Vector(0, 0)
 let acceleration = new Vector(0, 0)
@@ -4464,7 +4482,7 @@ function move() {
 function drawEnemies(){
     
     if (!startgame && (enemies.length === 0 || enemies.every((x) => {return !x.active}))) {
-       enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
+       //enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
        enemies.push({type: 2, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
         for(let i=0;i<1001;i++){
             //enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
@@ -4576,6 +4594,57 @@ function processAI(){
 }
 
 
+//spider game text (negative webs)
+/*
+--start, lines
+
+S - {114:140, 257:164, 184:87, 233:62, 146:75, 196:146},
+P - {271:173, 263:65, 330:92, 294:109, 272:174}
+I - {362:173, 345:122, 369:68,375:115} 
+D - {404:178, 412:74, 492:138}
+E - {500:188, 493:77, 556:90, 524:112, 553:131, 523:156, 556:182}
+R - {595:184, 585:83, 654:95, 630:124, 664:176,615:157}
+G - {126:342, 103:238, 176:195, 137:254, 139:316, 168:302, 174:283, 188:314}
+A - {236:330, 286:216, 361:323}
+M - {400:329, 412:217, 450:250, 501:222, 498:329, 454:285}
+E - {563:333, 563:235, 628:244, 593:268, 621:291, 590:305, 625:330}
+
+*/
+let logoS = [{x: 114, y: 140}, {x: 257, y: 164}, {x: 184, y: 87}, {x: 233, y: 62}, {x: 146, y: 75}, {x: 196, y: 146}];
+let logoP = [{x: 271, y: 173}, {x: 263, y: 65}, {x: 330, y: 92}, {x: 294, y: 109}, {x: 272, y: 174}];
+let logoI = [{x: 362, y: 173}, {x: 345, y: 122}, {x: 369, y: 68}, {x: 375, y: 115}];
+let logoD = [{x: 404, y: 178}, {x: 412, y: 74}, {x: 492, y: 138}];
+let logoE = [{x: 500, y: 188}, {x: 493, y: 77}, {x: 556, y: 90}, {x: 524, y: 112}, {x: 553, y: 131}, {x: 523, y: 156}, {x: 556, y: 182}];
+let logoR = [{x: 595, y: 184}, {x: 585, y: 83}, {x: 654, y: 95}, {x: 630, y: 124}, {x: 664, y: 176}, {x: 615, y: 157}];
+let logoG = [{x: 126, y: 342}, {x: 103, y: 238}, {x: 176, y: 195}, {x: 137, y: 254}, {x: 139, y: 316}, {x: 168, y: 302}, {x: 174, y: 283}, {x: 188, y: 314}];
+let logoA = [{x: 236, y: 330}, {x: 286, y: 216}, {x: 361, y: 323}];
+let logoM = [{x: 400, y: 329}, {x: 412, y: 217}, {x: 450, y: 250}, {x: 501, y: 222}, {x: 498, y: 329}, {x: 454, y: 285}];
+let logoE2 = [{x: 563, y: 333}, {x: 563, y: 235}, {x: 628, y: 244}, {x: 593, y: 268}, {x: 621, y: 291}, {x: 590, y: 305}, {x: 625, y: 330}];
+let logoText = [logoS, logoP, logoI, logoD, logoE, logoR, logoG, logoA, logoM, logoE2]
+//561 width (start 103)
+//280 height (start 62)
+let logoWidth = 664 + 103;
+let logoHeight = 342;
+//scale down logo to fit portrait mode screens 
+if(viewport.width < 664){
+    const maxw = viewport.width / 664;
+    logoWidth *= maxw;
+    logoHeight *= maxw;
+    logoText.forEach((letter)=>{
+        letter.forEach((x)=>{
+            x.x *= maxw;
+            x.y *= maxw;
+        })
+    })
+}
+
+
+//for mobile:
+// if 1/2 scrn height is less than logo height (342): We are on mobile in landscape mode
+// if screen height is greater than screen width: We are on mobile in portrait mode 
+
+// if you rotate it... ih8u 
+
 
 let spaceHeld = 0;
 let jumpCoolDown = 0;
@@ -4589,56 +4658,18 @@ let startButton, optionsButton, quitButton;
 
 
 //temp
-if (startgame) {
+function UIBoundaries() {
 
-    const w = viewport.width - buffer;
-    const h = viewport.height - buffer;
+    const w = viewport.width;
+    const h = viewport.height;
     
         boundaryColliders.push({p1: {x: w, y: h}, p2: {x: 0, y: h}, solid: true});
         boundaryColliders.push({p1: {x: 0, y: h}, p2: {x: 0, y: 0}, solid: true});
         boundaryColliders.push({p1: {x: 0, y: 0}, p2: {x: w, y: 0}, solid: true});
         boundaryColliders.push({p1: {x: w, y: 0}, p2: {x: w, y: h}, solid: true});
-        //areaBoxes.push({p1: {x: 0, y: h}, p2: {x: w, y: h-30}})
-        uictx.fillStyle = "#ffffff";
-        // uictx.font = "72px Comic Sans MS";
-        // uictx.textAlign = "left";
-        // const title = "S P I D E R   G A M E"
-        // let offset = 0;
-        // title.split("").forEach((x)=>{
-        //     const boxw = uictx.measureText(x).width;
-        //     const boxh = uictx.measureText(x).actualBoundingBoxAscent;
-        //     if (x !== " "){
-        //         const wo = w * 0.2 + offset
-        //         //bottom
-        //         boundaryColliders.push({p1: {x: wo, y: h * 0.25}, 
-        //             p2: {x: wo + boxw, y: h * 0.25}, solid: false});
-        //         //right side
-        //         boundaryColliders.push({p1: {x: wo + boxw, y: h * 0.25}, 
-        //             p2: {x: wo + boxw, y: h * 0.25 - boxh}, solid: false});
-        //         //top 
-        //         boundaryColliders.push({p1: {x: wo, y: h * 0.25 - boxh}, 
-        //             p2: {x: wo + boxw, y: h * 0.25 - boxh}, solid: false});
-        //         //left side 
-        //         boundaryColliders.push({p1: {x: wo, y: h * 0.25 - boxh}, 
-        //             p2: {x: wo, y: h * 0.2}, solid: false});
-        //         areaBoxes.push({p1: {x: wo, y: h * 0.25}, 
-        //          p2: {x: wo + boxw, y: h * 0.25 - boxh}});
-
-        //         // webArray.push({
-        //         //     p1: {x: wo + boxw * 0.5, y: h * 0.25 - boxh}, 
-        //         //     p2: {x: wo + boxw * 0.5, y: 0},
-        //         //     solid: false, 
-        //         //     stuck: [], 
-        //         //     vibros: [], 
-        //         //     attached: [], 
-        //         //     attachedTo: [-1, -1]
-        //         // })
-        //     }
-        //     offset += boxw
-        // })
-
-            
+        //uictx.fillStyle = "#ffffff";
 }   
+UIBoundaries();
 
 let zero;
 function firstFrame(timestamp) {
@@ -4661,8 +4692,8 @@ function update(timestamp) {
     //start screen 
     if (startgame) {
 
-        const w = viewport.width - buffer;
-        const h = viewport.height - buffer;
+        const w = viewport.width;
+        const h = viewport.height;
         const step = firstclick > 0 ? (lastTimestamp - firstclick) * 0.4 : 0;
         const timer = step >= viewport.height; 
         
@@ -4685,7 +4716,7 @@ function update(timestamp) {
         // Fill with gradient
         uictx.fillStyle = sky;
         //uictx.fillStyle = "#2DCEFF";
-        uictx.fillRect(0,1,w,h)
+        uictx.fillRect(0,0,w,h)
         uictx.fillStyle = "#ffffff";
         // uictx.font = "72px Comic Sans MS";
         // uictx.textAlign = "left";
@@ -4694,14 +4725,17 @@ function update(timestamp) {
         
 
         const curs = Math.min(1,(step - viewport.height)/250);
+        const logoStartX = w*0.5 - (logoWidth / 2); //half-ish of logo width: ;
+        const logoStartY = h*0.1 - 62; //start y
         invsky.addColorStop(0.2, `rgba(255, 255, 255, ${curs})`);
         //invsky.addColorStop(0.33, `rgba(255, 255, 255, ${curs})`); 
         //invsky.addColorStop(0.33, `rgba(201, 230, 255, ${curs})`); 
         invsky.addColorStop(0.5, `rgba(2, 82, 255, ${curs})`);
         invsky.addColorStop(1, `rgba(0, 23, 73, ${curs})`);
         if(timer){
-            const yoff = 120;
-            const ystart = h * 0.6;
+            const xoff = h * 0.6 < logoHeight ? viewport.width*0.25 : 0;
+            const yoff = viewport.height < logoHeight*2 ? 0 : 120;
+            const ystart = viewport.height < logoHeight*2 ? viewport.height - 20 : h * 0.6;
             const p = 8;
                 const box1w = uictx.measureText("START").width * 0.5;
                 const box1h = uictx.measureText("START").actualBoundingBoxAscent;
@@ -4713,23 +4747,23 @@ function update(timestamp) {
             uictx.strokeStyle = `rgba(255, 255, 255, ${curs})`;
             uictx.lineWidth = 3;
                 uictx.beginPath();
-                uictx.roundRect(w * 0.5 - box1w - p*0.5, ystart - box1h - p, box1w*2 + p, box1h + p*2, p);
+                uictx.roundRect(w * 0.5 - box1w - xoff - p*0.5, ystart - box1h - p, box1w*2 + p, box1h + p*2, p);
                 uictx.fill();
                 uictx.stroke();
                 uictx.beginPath();
-                uictx.roundRect(w * 0.5 - box2w - p*0.5, ystart - box2h + yoff - p, box2w*2 + p, box2h + p*2, p);
+                uictx.roundRect(w * 0.5 - box2w + xoff - p*0.5, ystart - box2h + yoff - p, box2w*2 + p, box2h + p*2, p);
                 uictx.fill();
                 uictx.stroke();
                 uictx.beginPath();
-                uictx.roundRect(w * 0.5 - box3w - p*0.5, ystart - box3h + yoff*2 - p, box3w*2 + p, box3h + p*2, p);
+                uictx.roundRect(w * 0.5 - box3w + xoff*4 - p*0.5, ystart - box3h + yoff*2 - p, box3w*2 + p, box3h + p*2, p);
                 uictx.fill();
                 uictx.stroke();
             uictx.textAlign = "center";
             uictx.font = "48px Arial Narrow";
             uictx.fillStyle = `rgba(255, 255, 255, ${curs})`;
-            uictx.fillText("START", w * 0.5, ystart);
-            uictx.fillText("OPTIONS", w * 0.5, ystart + yoff);
-            uictx.fillText("EXIT", w * 0.5, ystart + (yoff*2));
+            uictx.fillText("START", w * 0.5 - xoff, ystart);
+            uictx.fillText("OPTIONS", w * 0.5 + xoff, ystart + yoff);
+            uictx.fillText("EXIT", w * 0.5 + xoff*4, ystart + (yoff*2));
             const buttonHover = checkCollision(spideyPos.x, spideyPos.y, 5)
             if(buttonHover === startButton || buttonHover === optionsButton || buttonHover === quitButton) {
                 const x = areaBoxes[buttonHover];
@@ -4741,34 +4775,34 @@ function update(timestamp) {
             }
 
             if(curs === 1 && webArray.length === 0){
-                areaBoxes.push({p1: {x: w * 0.5 - box1w - p*0.5, y: ystart + p}, 
-                    p2: {x: w * 0.5 + box1w + p, y: ystart - box1h - p}});
+                areaBoxes.push({p1: {x: w * 0.5 - box1w - xoff - p*0.5, y: ystart + p}, 
+                    p2: {x: w * 0.5 + box1w - xoff + p, y: ystart - box1h - p}});
                     startButton = areaBoxes.length - 1;
                     //bottom
-                    boundaryColliders.push({p1: {x: w * 0.5 - box1w - p*0.5, y: ystart+p}, 
-                        p2: {x: w * 0.5 + box1w + p, y: ystart+p}, solid: false});
+                    boundaryColliders.push({p1: {x: w * 0.5 - box1w - xoff - p*0.5, y: ystart+p}, 
+                        p2: {x: w * 0.5 + box1w - xoff + p, y: ystart+p}, solid: false});
                         //top
-                        boundaryColliders.push({p1: {x: w * 0.5 - box1w - p*0.5, y: ystart - box1h - p}, 
-                            p2: {x: w * 0.5 + box1w + p, y: ystart - box1h - p}, solid: false});
-                areaBoxes.push({p1: {x: w * 0.5 - box2w - p*0.5, y: ystart + yoff + p}, 
-                    p2: {x: w * 0.5 + box2w + p, y: ystart + yoff - box2h - p}});
+                        boundaryColliders.push({p1: {x: w * 0.5 - box1w - xoff - p*0.5, y: ystart - box1h - p}, 
+                            p2: {x: w * 0.5 + box1w - xoff + p, y: ystart - box1h - p}, solid: false});
+                areaBoxes.push({p1: {x: w * 0.5 - box2w + xoff - p*0.5, y: ystart + yoff + p}, 
+                    p2: {x: w * 0.5 + box2w + xoff + p, y: ystart + yoff - box2h - p}});
                     optionsButton = areaBoxes.length - 1;
                     //bottom
-                    boundaryColliders.push({p1: {x: w * 0.5 - box2w - p*0.5, y: ystart + yoff + p}, 
-                        p2: {x: w * 0.5 + box2w + p, y: ystart + yoff + p}, solid: false});
+                    boundaryColliders.push({p1: {x: w * 0.5 - box2w + xoff - p*0.5, y: ystart + yoff + p}, 
+                        p2: {x: w * 0.5 + box2w + xoff + p, y: ystart + yoff + p}, solid: false});
                         //top
-                        boundaryColliders.push({p1: {x: w * 0.5 - box2w - p*0.5, y: ystart + yoff - box2h - p}, 
-                            p2: {x: w * 0.5 + box2w + p, y: ystart + yoff - box2h - p}, solid: false});
+                        boundaryColliders.push({p1: {x: w * 0.5 - box2w + xoff - p*0.5, y: ystart + yoff - box2h - p}, 
+                            p2: {x: w * 0.5 + box2w + xoff + p, y: ystart + yoff - box2h - p}, solid: false});
                     
-                areaBoxes.push({p1: {x: w * 0.5 - box3w - p*0.5, y: ystart + (yoff*2) + p}, 
-                    p2: {x: w * 0.5 + box3w + p, y: ystart + (yoff*2) - box3h - p}});
+                areaBoxes.push({p1: {x: w * 0.5 - box3w + xoff*4 - p*0.5, y: ystart + (yoff*2) + p}, 
+                    p2: {x: w * 0.5 + box3w + xoff*4 + p, y: ystart + (yoff*2) - box3h - p}});
                     quitButton = areaBoxes.length - 1;
                     //bottom
-                    boundaryColliders.push({p1: {x: w * 0.5 - box3w - p*0.5, y: ystart + (yoff*2) + p}, 
-                        p2: {x: w * 0.5 + box3w + p, y: ystart + (yoff*2) + p}, solid: false});
+                    boundaryColliders.push({p1: {x: w * 0.5 - box3w + xoff*4 - p*0.5, y: ystart + (yoff*2) + p}, 
+                        p2: {x: w * 0.5 + box3w + xoff*4 + p, y: ystart + (yoff*2) + p}, solid: false});
                         //top
-                        boundaryColliders.push({p1: {x: w * 0.5 - box3w - p*0.5, y: ystart + (yoff*2) - box3h - p}, 
-                            p2: {x: w * 0.5 + box3w + p, y: ystart + (yoff*2) - box3h - p}, solid: false});
+                        boundaryColliders.push({p1: {x: w * 0.5 - box3w + xoff*4 - p*0.5, y: ystart + (yoff*2) - box3h - p}, 
+                            p2: {x: w * 0.5 + box3w + xoff*4 + p, y: ystart + (yoff*2) - box3h - p}, solid: false});
 
                 logoText.forEach((letter)=>{
                     console.log(letter)
@@ -4776,8 +4810,8 @@ function update(timestamp) {
                         console.log(x)
                         let tgt = id < letter.length-1 ? id+1 : 0
                         webArray.push({
-                            p1: {x: x.x + w*0.5 - 366, y: x.y+60}, 
-                            p2: {x: letter[tgt].x + w*0.5 - 366, y: letter[tgt].y+60},
+                            p1: {x: x.x + logoStartX, y: x.y + logoStartY}, 
+                            p2: {x: letter[tgt].x + logoStartX, y: letter[tgt].y + logoStartY},
                             solid: false, 
                             stuck: [], 
                             vibros: [], 
@@ -4789,13 +4823,13 @@ function update(timestamp) {
                             let tgt2 = id === 0 ? id+1 : 0
                             projectiles.push({
                                 type: 3, 
-                                x: x.x + w*0.5 - 366, 
-                                y: x.y+60, 
+                                x: x.x + logoStartX, 
+                                y: x.y + logoStartY, 
                                 speedx: (x.x - letter[tgt2].x)*0.1 * Math.random(), 
                                 speedy: (x.y - letter[tgt2].y)*0.1 - Math.random(), 
                                 start: lastTimestamp,
-                                ox: x.x + w*0.5 - 366, 
-                                oy: x.y+60, 
+                                ox: x.x + logoStartX, 
+                                oy: x.y + logoStartY, 
                             })
                         }
 
@@ -4836,16 +4870,16 @@ function update(timestamp) {
                 context.strokeStyle = `rgba(255, 255, 255, ${curs})`;
                 context.fillStyle = invsky;
                 context.beginPath();
-                context.moveTo(letter[0].x + w*0.5 - 366, letter[0].y+60)
+                context.moveTo(letter[0].x + logoStartX, letter[0].y + logoStartY)
                 letter.forEach((x)=>{
-                    context.lineTo(x.x + w*0.5 - 366 , x.y+60)
+                    context.lineTo(x.x + logoStartX , x.y + logoStartY)
                 })
-                context.lineTo(letter[0].x + w*0.5 - 366, letter[0].y+60)
+                context.lineTo(letter[0].x + logoStartX, letter[0].y + logoStartY)
                 context.fill()
                 context.stroke()
             })
         }
-        if (mouseFocus){
+        if (mouseFocus && timer){
             const curX = spideyPos.x;
             const curY = spideyPos.y;
             if(!noinput()){
@@ -5273,7 +5307,7 @@ function initScene(){
     webArray.length = 0;
     
     //temp?
-    addBoundaries(); 
+    //addBoundaries(); 
 }
 
 
