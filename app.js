@@ -4662,8 +4662,8 @@ if(viewport.width < 664){
         })
     })
 }
-if(viewport.height < 342){
-    const maxw = viewport.height / 342;
+if(viewport.height - 80 < logoHeight){
+    const maxw = (viewport.height - 80) / logoHeight;
     logoWidth *= maxw;
     logoHeight *= maxw;
     logoText.forEach((letter)=>{
@@ -4773,6 +4773,8 @@ function update(timestamp) {
             const yoff = viewport.height < logoHeight*2 ? 0 : 120;
             const ystart = viewport.height < logoHeight*2 ? viewport.height - 20 : h * 0.6;
             const p = 8;
+            uictx.textAlign = "center";
+            uictx.font = "48px Arial Narrow";
                 const box1w = uictx.measureText("START").width * 0.5;
                 const box1h = uictx.measureText("START").actualBoundingBoxAscent;
                 const box2w = uictx.measureText("OPTIONS").width*0.5;
@@ -4794,8 +4796,6 @@ function update(timestamp) {
                 uictx.roundRect(w * 0.5 - box3w + xoff*4 - p*0.5, ystart - box3h + yoff*2 - p, box3w*2 + p, box3h + p*2, p);
                 uictx.fill();
                 uictx.stroke();
-            uictx.textAlign = "center";
-            uictx.font = "48px Arial Narrow";
             uictx.fillStyle = `rgba(255, 255, 255, ${curs})`;
             uictx.fillText("START", w * 0.5 - xoff, ystart);
             uictx.fillText("OPTIONS", w * 0.5 + xoff, ystart + yoff);
