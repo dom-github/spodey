@@ -61,21 +61,21 @@ function setDim() {
     background.height = window.innerHeight;
     
 
-    // original values
-    // let logoWidth = 664 + 103;
-    // let logoHeight = 342;
-    const diffw = 664 / logoWidth;
-    const diffh = 342 / logoHeight;
-    //nasty reset
-    logoWidth = 664;
-    logoHeight = 342;
-    logoText.forEach((letter)=>{
-        letter.forEach((x)=>{
-            x.x *= diffw;
-            x.y *= diffh;
-        })
-    })
     if(startgame) {
+        // original values
+        // let logoWidth = 664 + 103;
+        // let logoHeight = 342;
+        const diffw = 664 / logoWidth;
+        const diffh = 342 / logoHeight;
+        //nasty reset
+        logoWidth = 664;
+        logoHeight = 342;
+        logoText.forEach((letter)=>{
+            letter.forEach((x)=>{
+                x.x *= diffw;
+                x.y *= diffh;
+            })
+        })
         mousePosition = {x: window.innerWidth * 0.5, y: window.innerHeight * 0.5}
         initScene();
         UIBoundaries();
@@ -103,6 +103,8 @@ function setDim() {
         }
         firstclick = mouseFocus ? lastTimestamp - firstclick : 0;
         // mouseFocus = true;
+    } else if(isUsingTouch) {
+        initMobileUI();
     }
     // context.width = window.innerWidth;
     // context.height = window.innerHeight;
@@ -394,7 +396,9 @@ let OspideyJump = [
     {x: 16, y: 15},
     {x: 24, y: 5},
     {x: 27, y: -15},
-    {x: 16, y: -20}]
+    {x: 16, y: -20}
+]
+
 // var spideyJump = [
 //     //Left leggies
 //     {x: -16, y: 16},
@@ -453,10 +457,10 @@ let OlegOrigins = [
 function scaleWorld(news){
     
         context.scale(1/worldScale, 1/worldScale);
-        bgctx.scale(1/worldScale, 1/worldScale)
+        bgctx.scale(1/worldScale, 1/worldScale);
         worldScale = Math.max(1, Math.min(8,news));
         context.scale(worldScale, worldScale);
-        bgctx.scale(worldScale, worldScale)
+        bgctx.scale(worldScale, worldScale);
         console.log(worldScale);
 
 }
@@ -610,6 +614,11 @@ function mousedown(e){
                 skipMouseInput = true;
                 initScene();
                 addBoundaries();
+                //uictx.clearRect(0,0,UI.width,UI.height);
+                // UI.width = 0;
+                // UI.height = 0;
+                UI.width = viewport.width;
+                UI.height = viewport.height;
                 spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
             } else if(clickID ===  optionsButton){
                         console.log("Options!")
@@ -1081,7 +1090,8 @@ CanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
 const ttMove = 0;
 const ttLeft = 1;
 const ttRight = 2;
-const ttBtn = 3; 
+const ttJump = 3; 
+const ttSwing = 3; 
 
 function ongoingTouchIndexById(idToFind) {
     for (let i = 0; i < ongoingTouches.length; i++) {
@@ -1102,7 +1112,6 @@ function ongoingTouchIndexById(idToFind) {
   //    -> +- 1/4 screen height, 1/8 screen width 
   //    -> dist less or equal to min(1/4 h, 1/8 w) -> what are actual values here..? who has craziest screen sizes on mobile idk
 function touchStart(evt) {
-
     if(!firstclick && startgame){
         document.removeEventListener("pointerlockchange", lockChangeAlert, false); //we on mobile!!
         // document.removeEventListener("wheel", wheelHandler, false);
@@ -1110,6 +1119,8 @@ function touchStart(evt) {
         // document.removeEventListener("keyup", keyUpHandler, false);
         firstclick = lastTimestamp;
         mouseFocus = true;
+        isUsingTouch = true;
+        initMobileUI();
     }
     evt.preventDefault();
     //console.log("touchstart.", evt);
@@ -1118,15 +1129,52 @@ function touchStart(evt) {
     for (let i = 0; i < touches.length; i++) {
       ongoingTouches.push(copyTouch(touches[i]));
       const curt = ongoingTouches[ongoingTouches.length-1];
-      const size = Math.min(viewport.width * 0.13, viewport.height * 0.25)
-      const js1 = {x: viewport.width * 0.13, y: viewport.height * 0.75};
-      const js2 = {x: viewport.width * 0.87, y: viewport.height * 0.75};
-      const dt1 = dist2(js1, {x: curt.clientX, y: curt.clientY});
-      const dt2 = dist2(js2, {x: curt.clientX, y: curt.clientY});
-      if(dt1 <= size*size || dt2 <= size*size){
-        curt.input = ttMove;
-        curt.origX = curt.clientX;
-        curt.origY = curt.clientY;
+    //   const size = Math.min(viewport.width * 0.13, viewport.height * 0.25)
+    //   const js1 = {x: viewport.width * 0.13, y: viewport.height * 0.75};
+    //   const js2 = {x: viewport.width * 0.87, y: viewport.height * 0.75};
+    //   const dt1 = dist2(js1, {x: curt.clientX, y: curt.clientY});
+    //   const dt2 = dist2(js2, {x: curt.clientX, y: curt.clientY});
+    if (pointInTriangle(
+        {x: curt.clientX, y: curt.clientY}, 
+        UIButtons[0].p1, 
+        UIButtons[0].p2, 
+        UIButtons[0].p3)
+    || pointInTriangle(
+        {x: curt.clientX, y: curt.clientY}, 
+        UIButtons[3].p2, 
+        UIButtons[3].p1, 
+        UIButtons[3].p3)) {
+            curt.input = ttMove;
+            curt.origX = curt.clientX;
+            curt.origY = curt.clientY;
+      } else if (pointInTriangle(
+        {x: curt.clientX, y: curt.clientY}, 
+        UIButtons[1].p1, 
+        UIButtons[1].p3, 
+        UIButtons[1].p2)
+        || pointInTriangle(
+            {x: curt.clientX, y: curt.clientY}, 
+            UIButtons[4].p1, 
+            UIButtons[4].p2, 
+            UIButtons[4].p3)) {
+            curt.input = ttJump;
+            curt.origX = curt.clientX;
+            curt.origY = curt.clientY;
+            spacePressed = true;
+      } else if (pointInTriangle(
+        {x: curt.clientX, y: curt.clientY}, 
+        UIButtons[2].p1, 
+        UIButtons[2].p2, 
+        UIButtons[2].p3)
+        || pointInTriangle(
+            {x: curt.clientX, y: curt.clientY}, 
+            UIButtons[5].p2, 
+            UIButtons[5].p1, 
+            UIButtons[5].p3)) {
+            curt.input = ttSwing;
+            curt.origX = curt.clientX;
+            curt.origY = curt.clientY;
+            shiftPressed = true;
       } else if(curt.clientX > viewport.width*0.5){
         curt.input = ttRight;
         mousedown({button: 2, clientX: curt.clientX, clientY: curt.clientY})
@@ -1135,7 +1183,7 @@ function touchStart(evt) {
         mousedown({button: 0, clientX: curt.clientX, clientY: curt.clientY})
       }
 
-      console.log(`touchstart:.`,dt1,dt2,size*size, ongoingTouches[0]);
+      console.log(`touchstart:.`, ongoingTouches[0]);
     }
     //const press = newtouches.every((x)=>{return x.pageX <= viewport.width * 0.5}) ? 2 : 0;
 
@@ -1190,7 +1238,7 @@ function touchStart(evt) {
             mousedir = new Vector(movementX, movementY)
             cursorPos = new Vector(mouseCursor.x, mouseCursor.y)
             cursorPos = cursorPos.scaleBy(Math.min(1,spideyRadius / cursorPos.length()))
-        } else if(region === ttMove){
+        } else if(region === ttMove || region === ttJump ||region === ttSwing){
             upPressed = 0.0;
             downPressed = 0.0;
             rightPressed = 0.0;
@@ -1223,7 +1271,9 @@ function touchStart(evt) {
       if (idx >= 0) {
         if(ongoingTouches[idx].input === ttRight) mouseup({button: 2})
         if(ongoingTouches[idx].input === ttLeft) mouseup({button: 0})
-        if(ongoingTouches[idx].input === ttMove) {
+        if(ongoingTouches[idx].input === ttJump) spacePressed = false;
+        if(ongoingTouches[idx].input === ttSwing) shiftPressed = false;
+        if(ongoingTouches[idx].input === ttMove || ongoingTouches[idx].input === ttJump || ongoingTouches[idx].input === ttSwing) {
             upPressed = 0;
             downPressed = 0;
             rightPressed = 0;
@@ -1237,6 +1287,7 @@ function touchStart(evt) {
   }
 //touch events ..!
 const ongoingTouches = [];
+let isUsingTouch = false;
 viewport.addEventListener("touchstart", touchStart);
 viewport.addEventListener("touchend", touchEnd);
 viewport.addEventListener("touchcancel", touchCancel);
@@ -2352,7 +2403,7 @@ function spideyMove(leg) {
                         //if (line >= 0) console.log("Closest:", line, dist)
                     if (dist < nearest 
                         && distToSegment({x:0, y:0}, walkLines[i].p1, walkLines[i].p2)
-                        <= spideyRadius*Math.min(1.33, spiScl)) {
+                        <= spideyRadius*0.5) {
                         line = i;
                         nearest = dist;
                     }
@@ -2379,16 +2430,19 @@ function spideyMove(leg) {
                     )
                     
 
-                if(Math.abs(legMods[leg].dx - (grab.x - spideyLegs[leg].x)) > spideyRadius/4
-                || Math.abs(legMods[leg].dy - (grab.y - spideyLegs[leg].y)) > spideyRadius/4){
-                    //console.log("recalculate");
+                const dist = Math.hypot(Math.abs(legMods[leg].dx - (grab.x - spideyLegs[leg].x)), Math.abs(legMods[leg].dy - (grab.y - spideyLegs[leg].y)))
+                if ((legMods[leg].start < lastTimestamp - 200
+                    && dist > spideyRadius*0.1)
+                    || dist > spideyRadius*0.25)
+                {
+                    console.log("recalculate");
                     legMods[leg].x = legMods[leg].jx;
                     legMods[leg].y = legMods[leg].jy;
-                    if (legMods[leg].start !== lastTimestamp) legMods[leg].start = lastTimestamp-0.1
+                    legMods[leg].start = lastTimestamp;
                 }
-                
                 legMods[leg].dx =  grab.x - spideyLegs[leg].x;
                 legMods[leg].dy =  grab.y - spideyLegs[leg].y;
+                
             }
 
             if((legMods[leg].anim === none || (legMods[leg].anim === jumping && lastTimestamp - legMods[leg].start > 600)) && !spacePressed && !shiftPressed) {
@@ -3019,8 +3073,8 @@ function drawSpidey(x, y) {
         if(!falling){
             sumy += legMods[e].jy + spideyLegs[e].y;
             sumx += legMods[e].jx + spideyLegs[e].x;
-            yrotation = doubleClamp(sumy / 8, -spideyRadius, spideyRadius);
-            xrotation = doubleClamp(sumx / 8, -spideyRadius, spideyRadius);
+            yrotation = doubleClamp(sumy / 8, -spideyRadius*0.5, spideyRadius*0.5);
+            xrotation = doubleClamp(sumx / 8, -spideyRadius*0.5, spideyRadius*0.5);
         }
     }
     if (Math.abs(yrotation) >= 0) {
@@ -3611,8 +3665,8 @@ function gravity() {
     let testPos = position.add(velocity);
     
     //swinging
-    //removed hand swing 
-    if (falling && (layWeb||count <8) && shiftPressed) {
+    //removed hand swing ||count <8
+    if (falling && (layWeb) && shiftPressed) {
         
 
         let swingPoint = new Vector(webOrigin.x, webOrigin.y)
@@ -3623,8 +3677,6 @@ function gravity() {
             //context.fillCircle(rope.components[0], rope.components[1], 5)
             //console.log(position.subtract(swingPoint).length())
             for(let j=0; j < spideyLegs.length; j++) {
-                const scale =  (position.subtract(swingPoint).length() - Math.abs(spideyJump[j].x/2) - legOrigins[j].y - spideyRadius*0.1) / position.subtract(swingPoint).length();
-                let rope = position.subtract(swingPoint).scaleBy(scale).add(swingPoint)
                 
                     if(legMods[j].anim !== swinging && legMods[j].anim < grabWeb){
                         legMods[j].anim = swinging;
@@ -3632,8 +3684,10 @@ function gravity() {
                         
                         // legMods[j].x = rope.components[0] - spideyPos.x - spideyLegs[j].x;
                         // legMods[j].y = rope.components[1] - spideyPos.y - spideyLegs[j].y;
-                        legMods[j].dx = j === 3 || j === 7 || j === 2 || j === 6 ? rope.components[0] - spideyPos.x - spideyLegs[j].x : spideyJump[j].x - spideyLegs[j].x;
-                        legMods[j].dy = j === 3 || j === 7 || j === 2 || j === 6  ? rope.components[1] - spideyPos.y - spideyLegs[j].y : spideyJump[j].y - spideyLegs[j].y;
+                        const scale =  (position.subtract(swingPoint).length() - Math.abs(spideyJump[j].x/2) - legOrigins[j].y - spideyRadius*0.1) / position.subtract(swingPoint).length();
+                        let rope = position.subtract(swingPoint).scaleBy(scale).add(swingPoint)
+                        legMods[j].dx = j === 3 || j === 7 || j === 2 || j === 6 ? rope.components[0] - spideyPos.x - spideyLegs[j].x : spideyJump[j].x*0.75 - spideyLegs[j].x;
+                        legMods[j].dy = j === 3 || j === 7 || j === 2 || j === 6  ? rope.components[1] - spideyPos.y - spideyLegs[j].y : spideyJump[j].y*0.75 - spideyLegs[j].y;
                     } 
             }
         } 
@@ -3642,7 +3696,7 @@ function gravity() {
         {
             let swingLength = swingPoint.subtract(position).length()
             //console.log(swingLength)
-            if (swingLength < 12){
+            if (layWeb && swingLength < 12){
                 shiftPressed = false;
                 spacePressed = false;
             } else {
@@ -4477,10 +4531,15 @@ function move() {
     for (let i=0; i < legMods.length; i++) {
         if (legMods[i].anim === grabbing) {
             legMods[i].x -= xmov;
-            //legMods[i].dx -= xmov;
+            // legMods[i].dx -= xmov;
+            // legMods[i].jx -= xmov;
             legMods[i].y -= ymov;
-            //legMods[i].dy -= ymov;
-        } 
+            // legMods[i].dy -= ymov;
+            // legMods[i].jy -= ymov;
+        } else if (legMods[i].anim === walking) {
+            legMods[i].x += xmov*0.25;
+            legMods[i].y += ymov*0.25;
+        }
         
         // if (0 + (radius) + buffer <= spideyPos.x &&
         //     spideyPos.x <= worldCanvas.width - (radius) - buffer)
@@ -5013,6 +5072,11 @@ function update(timestamp) {
             overdrawX, overdrawY, 
             0, 0, 
             w, h)
+        if (isUsingTouch) drawMobileUI();
+        // vctx.drawImage(UI, 0, 0,
+        //     w, h, 
+        //     0, 0, 
+        //     w, h)
         //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
         
 
@@ -5347,6 +5411,126 @@ function initScene(){
     //addBoundaries(); 
 }
 
+//init mobile UI
+//0: L Move
+//1: L Jump
+//2: L Swing
+//3: R Move
+//4: R Jump
+//5: R Swing
+const UIButtons = []
+function initMobileUI(){
+    UIButtons.length = 0; //reinit
+    const size = Math.min(viewport.width * 0.13, viewport.height * 0.25)
+    const js1 = {x: viewport.width * 0.13, y: viewport.height * 0.75};
+    const js2 = {x: viewport.width * 0.87, y: viewport.height * 0.75};
+
+    //move button top to bottom
+    const p1 = {x: 0, y: js1.y-size*0.5};
+    const p2 = {x: 0, y: viewport.height};
+    const p3 = {x: js1.x + size*1.5, y: js1.y};
+    UIButtons.push({
+        p1: p1, 
+        p2: p2, 
+        p3: p3, 
+        avg: {x: (p1.x + p2.x + p3.x) /3, y: (p1.y + p2.y + p3.y) /3}})
+    // jump button 
+    const p4 = {x: js1.x + size*1.5, y: viewport.height}
+    UIButtons.push({
+        p1: p2, 
+        p2: p3, 
+        p3: p4, 
+        avg: {x: (p2.x + p3.x + p4.x) /3, y: (p2.y + p3.y + p4.y) /3}})
+    // swing button 
+    const p5 = {x: viewport.width*0.5, y: viewport.height}
+    UIButtons.push({
+        p1: p3, 
+        p2: p4, 
+        p3: p5, 
+        avg: {x: (p3.x + p4.x + p5.x) /3, y: (p3.y + p4.y + p5.y) /3}})
+
+    // right side
+    const p1r = {x: viewport.width, y: js2.y-size*0.5};
+    const p2r = {x: viewport.width, y: viewport.height};
+    const p3r = {x: js2.x - size*1.5, y: js2.y};
+    UIButtons.push({
+        p1: p1r, 
+        p2: p2r, 
+        p3: p3r, 
+        avg: {x: (p1r.x + p2r.x + p3r.x) /3, y: (p1r.y + p2r.y + p3r.y) /3}})
+    // jump button 
+    const p4r = {x: js2.x - size*1.5, y: viewport.height}
+    UIButtons.push({
+        p1: p2r, 
+        p2: p3r, 
+        p3: p4r, 
+        avg: {x: (p2r.x + p3r.x + p4r.x) /3, y: (p2r.y + p3r.y + p4r.y) /3}})
+    // swing button 
+    const p5r = {x: viewport.width*0.5, y: viewport.height}
+    UIButtons.push({
+        p1: p3r, 
+        p2: p4r, 
+        p3: p5r, 
+        avg: {x: (p3r.x + p4r.x + p5r.x) /3, y: (p3r.y + p4r.y + p5r.y) /3}})
+
+}
+
+function drawMobileUI() {    
+    if(jactive){vctx.fillStyle = "#ee5555"
+        vctx.fillCircle(js1.x, js1.y, size);
+        vctx.fillCircle(js2.x, js2.y, size);
+        vctx.fillStyle = "#000000"}
+    vctx.strokeStyle = `rgba(0,0,0,0.5)`
+    vctx.lineWidth = 8;
+    vctx.beginPath();
+    vctx.moveTo(UIButtons[0].p1.x, UIButtons[0].p1.y);
+    vctx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+    //swing
+    vctx.lineTo(UIButtons[2].p3.x, UIButtons[2].p3.y);
+
+    vctx.moveTo(UIButtons[0].p2.x, UIButtons[0].p2.y);
+    vctx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+    //jump
+    vctx.moveTo(UIButtons[1].p2.x, UIButtons[1].p2.y);
+    vctx.lineTo(UIButtons[1].p3.x, UIButtons[1].p3.y);
+
+    //right side
+    vctx.moveTo(UIButtons[3].p1.x, UIButtons[3].p1.y);
+    vctx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
+    //swing
+    vctx.lineTo(UIButtons[5].p3.x, UIButtons[5].p3.y);
+    
+    vctx.moveTo(UIButtons[3].p2.x, UIButtons[3].p2.y);
+    vctx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
+    //jump
+    vctx.moveTo(UIButtons[4].p2.x, UIButtons[4].p2.y);
+    vctx.lineTo(UIButtons[4].p3.x, UIButtons[4].p3.y);
+    
+    vctx.stroke();
+    vctx.strokeStyle = `rgba(255,255,255,0.5)`
+    vctx.lineWidth = 3;
+    vctx.stroke();
+    
+
+//UI icon: move
+    vctx.fillStyle = `rgba(200,55,55,0.5)`
+    vctx.fillCircle(UIButtons[0].avg.x, UIButtons[0].avg.y, 8);
+    vctx.fillCircle(UIButtons[3].avg.x, UIButtons[3].avg.y, 8);
+    // vctx.beginPath();
+    // vctx.moveTo(js1.x-size*0.5, js1.y+size*0.25);
+    // vctx.lineTo(js1.x-size*0.25, js1.y+size*0.25);
+
+    // vctx.stroke();
+//UI icon: jump
+    vctx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 8);
+    vctx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 8);
+
+//UI icon: swing
+    vctx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 8);
+    vctx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 8);
+
+//UI icon: bite 
+}
 
 
 
@@ -5355,31 +5539,5 @@ function initScene(){
 
 
 
-// animationframe !
-// example 
 
-// let start, previousTimeStamp;
-// let done = false
 
-// function step(timestamp) {
-//     if (start === undefined) {
-//         start = timestamp;
-//         }
-//     const elapsed = timestamp - start;
-
-//     if (previousTimeStamp !== timestamp) {
-//         // Math.min() is used here to make sure the element stops at exactly 200px
-//         const count = Math.min(0.1 * elapsed, 200);
-//         canvas.style.transform = `translateX(${count}px)`;
-//         if (count === 200) done = true;
-//     }
-
-//     if (elapsed < 2000) { // Stop the animation after 2 seconds
-//         previousTimeStamp = timestamp;
-//         if (!done) {
-//         window.requestAnimationFrame(step);
-//         }
-//     }
-// }
-
-//window.requestAnimationFrame(step);
