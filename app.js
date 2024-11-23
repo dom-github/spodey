@@ -15,7 +15,7 @@ viewport.height = window.innerHeight;
 
 const context = canvas.getContext("2d", { alpha: false });
 const vctx = viewport.getContext("2d", { alpha: false });
-const uictx = UI.getContext("2d", { alpha: false });
+const uictx = UI.getContext("2d", { alpha: true });
 
 const bgctx = background.getContext("2d", { alpha: false });
 
@@ -105,6 +105,7 @@ function setDim() {
         // mouseFocus = true;
     } else if(isUsingTouch) {
         initMobileUI();
+        drawMobileUI();
     }
     // context.width = window.innerWidth;
     // context.height = window.innerHeight;
@@ -619,6 +620,8 @@ function mousedown(e){
                 // UI.height = 0;
                 UI.width = viewport.width;
                 UI.height = viewport.height;
+                initMobileUI();
+                drawMobileUI();
                 spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
             } else if(clickID ===  optionsButton){
                         console.log("Options!")
@@ -1120,7 +1123,6 @@ function touchStart(evt) {
         firstclick = lastTimestamp;
         mouseFocus = true;
         isUsingTouch = true;
-        initMobileUI();
     }
     evt.preventDefault();
     //console.log("touchstart.", evt);
@@ -1134,60 +1136,59 @@ function touchStart(evt) {
     //   const js2 = {x: viewport.width * 0.87, y: viewport.height * 0.75};
     //   const dt1 = dist2(js1, {x: curt.clientX, y: curt.clientY});
     //   const dt2 = dist2(js2, {x: curt.clientX, y: curt.clientY});
-    if (pointInTriangle(
-        {x: curt.clientX, y: curt.clientY}, 
-        UIButtons[0].p1, 
-        UIButtons[0].p2, 
-        UIButtons[0].p3)
-    || pointInTriangle(
-        {x: curt.clientX, y: curt.clientY}, 
-        UIButtons[3].p2, 
-        UIButtons[3].p1, 
-        UIButtons[3].p3)) {
-            curt.input = ttMove;
-            curt.origX = curt.clientX;
-            curt.origY = curt.clientY;
-      } else if (pointInTriangle(
-        {x: curt.clientX, y: curt.clientY}, 
-        UIButtons[1].p1, 
-        UIButtons[1].p3, 
-        UIButtons[1].p2)
+    
+        if (!startgame && (pointInTriangle(
+            {x: curt.clientX, y: curt.clientY}, 
+            UIButtons[0].p1, 
+            UIButtons[0].p2, 
+            UIButtons[0].p3)
         || pointInTriangle(
             {x: curt.clientX, y: curt.clientY}, 
-            UIButtons[4].p1, 
-            UIButtons[4].p2, 
-            UIButtons[4].p3)) {
-            curt.input = ttJump;
-            curt.origX = curt.clientX;
-            curt.origY = curt.clientY;
-            spacePressed = true;
-      } else if (pointInTriangle(
-        {x: curt.clientX, y: curt.clientY}, 
-        UIButtons[2].p1, 
-        UIButtons[2].p2, 
-        UIButtons[2].p3)
-        || pointInTriangle(
+            UIButtons[3].p2, 
+            UIButtons[3].p1, 
+            UIButtons[3].p3))) {
+                curt.input = ttMove;
+                curt.origX = curt.clientX;
+                curt.origY = curt.clientY;
+        } else if (!startgame && (pointInTriangle(
             {x: curt.clientX, y: curt.clientY}, 
-            UIButtons[5].p2, 
-            UIButtons[5].p1, 
-            UIButtons[5].p3)) {
-            curt.input = ttSwing;
-            curt.origX = curt.clientX;
-            curt.origY = curt.clientY;
-            shiftPressed = true;
-      } else if(curt.clientX > viewport.width*0.5){
-        curt.input = ttRight;
-        mousedown({button: 2, clientX: curt.clientX, clientY: curt.clientY})
-      } else if(curt.clientX <= viewport.width*0.5){
-        curt.input = ttLeft;
-        mousedown({button: 0, clientX: curt.clientX, clientY: curt.clientY})
-      }
+            UIButtons[1].p1, 
+            UIButtons[1].p3, 
+            UIButtons[1].p2)
+            || pointInTriangle(
+                {x: curt.clientX, y: curt.clientY}, 
+                UIButtons[4].p1, 
+                UIButtons[4].p2, 
+                UIButtons[4].p3))) {
+                curt.input = ttJump;
+                curt.origX = curt.clientX;
+                curt.origY = curt.clientY;
+                spacePressed = true;
+        } else if (!startgame && (pointInTriangle(
+            {x: curt.clientX, y: curt.clientY}, 
+            UIButtons[2].p1, 
+            UIButtons[2].p2, 
+            UIButtons[2].p3)
+            || pointInTriangle(
+                {x: curt.clientX, y: curt.clientY}, 
+                UIButtons[5].p2, 
+                UIButtons[5].p1, 
+                UIButtons[5].p3))) {
+                curt.input = ttSwing;
+                curt.origX = curt.clientX;
+                curt.origY = curt.clientY;
+                shiftPressed = true;
+        } else if(curt.clientX > viewport.width*0.5 || startgame){
+            curt.input = ttRight;
+            mousedown({button: 2, clientX: curt.clientX, clientY: curt.clientY})
+        } else if(curt.clientX <= viewport.width*0.5 || startgame){
+            curt.input = ttLeft;
+            mousedown({button: 0, clientX: curt.clientX, clientY: curt.clientY})
+        }
+        console.log(`touchstart:.`, ongoingTouches[0]);
+        }
+        //const press = newtouches.every((x)=>{return x.pageX <= viewport.width * 0.5}) ? 2 : 0;
 
-      console.log(`touchstart:.`, ongoingTouches[0]);
-    }
-    //const press = newtouches.every((x)=>{return x.pageX <= viewport.width * 0.5}) ? 2 : 0;
-
-  
   }
 
 ////////////////////////////////////////////////////////
@@ -5072,11 +5073,10 @@ function update(timestamp) {
             overdrawX, overdrawY, 
             0, 0, 
             w, h)
-        if (isUsingTouch) drawMobileUI();
-        // vctx.drawImage(UI, 0, 0,
-        //     w, h, 
-        //     0, 0, 
-        //     w, h)
+        vctx.drawImage(UI, 0, 0,
+            w, h, 
+            0, 0, 
+            w, h)
         //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
         
 
@@ -5442,7 +5442,7 @@ function initMobileUI(){
         p3: p4, 
         avg: {x: (p2.x + p3.x + p4.x) /3, y: (p2.y + p3.y + p4.y) /3}})
     // swing button 
-    const p5 = {x: viewport.width*0.5, y: viewport.height}
+    const p5 = {x: viewport.width*0.5-10, y: viewport.height+3}
     UIButtons.push({
         p1: p3, 
         p2: p4, 
@@ -5466,7 +5466,7 @@ function initMobileUI(){
         p3: p4r, 
         avg: {x: (p2r.x + p3r.x + p4r.x) /3, y: (p2r.y + p3r.y + p4r.y) /3}})
     // swing button 
-    const p5r = {x: viewport.width*0.5, y: viewport.height}
+    const p5r = {x: viewport.width*0.5+10, y: viewport.height+3}
     UIButtons.push({
         p1: p3r, 
         p2: p4r, 
@@ -5476,58 +5476,58 @@ function initMobileUI(){
 }
 
 function drawMobileUI() {    
-    if(jactive){vctx.fillStyle = "#ee5555"
-        vctx.fillCircle(js1.x, js1.y, size);
-        vctx.fillCircle(js2.x, js2.y, size);
-        vctx.fillStyle = "#000000"}
-    vctx.strokeStyle = `rgba(0,0,0,0.5)`
-    vctx.lineWidth = 8;
-    vctx.beginPath();
-    vctx.moveTo(UIButtons[0].p1.x, UIButtons[0].p1.y);
-    vctx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+    if(jactive){uictx.fillStyle = "#ee5555"
+        uictx.fillCircle(js1.x, js1.y, size);
+        uictx.fillCircle(js2.x, js2.y, size);
+        uictx.fillStyle = "#000000"}
+    uictx.strokeStyle = `rgba(0,0,0,0.5)`
+    uictx.lineWidth = 8;
+    uictx.beginPath();
+    uictx.moveTo(UIButtons[0].p1.x, UIButtons[0].p1.y);
+    uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
     //swing
-    vctx.lineTo(UIButtons[2].p3.x, UIButtons[2].p3.y);
+    uictx.lineTo(UIButtons[2].p3.x, UIButtons[2].p3.y);
 
-    vctx.moveTo(UIButtons[0].p2.x, UIButtons[0].p2.y);
-    vctx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+    uictx.moveTo(UIButtons[0].p2.x, UIButtons[0].p2.y);
+    uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
     //jump
-    vctx.moveTo(UIButtons[1].p2.x, UIButtons[1].p2.y);
-    vctx.lineTo(UIButtons[1].p3.x, UIButtons[1].p3.y);
+    uictx.moveTo(UIButtons[1].p2.x, UIButtons[1].p2.y);
+    uictx.lineTo(UIButtons[1].p3.x, UIButtons[1].p3.y);
 
     //right side
-    vctx.moveTo(UIButtons[3].p1.x, UIButtons[3].p1.y);
-    vctx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
+    uictx.moveTo(UIButtons[3].p1.x, UIButtons[3].p1.y);
+    uictx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
     //swing
-    vctx.lineTo(UIButtons[5].p3.x, UIButtons[5].p3.y);
+    uictx.lineTo(UIButtons[5].p3.x, UIButtons[5].p3.y);
     
-    vctx.moveTo(UIButtons[3].p2.x, UIButtons[3].p2.y);
-    vctx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
+    uictx.moveTo(UIButtons[3].p2.x, UIButtons[3].p2.y);
+    uictx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
     //jump
-    vctx.moveTo(UIButtons[4].p2.x, UIButtons[4].p2.y);
-    vctx.lineTo(UIButtons[4].p3.x, UIButtons[4].p3.y);
+    uictx.moveTo(UIButtons[4].p2.x, UIButtons[4].p2.y);
+    uictx.lineTo(UIButtons[4].p3.x, UIButtons[4].p3.y);
     
-    vctx.stroke();
-    vctx.strokeStyle = `rgba(255,255,255,0.5)`
-    vctx.lineWidth = 3;
-    vctx.stroke();
+    uictx.stroke();
+    uictx.strokeStyle = `rgba(255,255,255,0.5)`
+    uictx.lineWidth = 3;
+    uictx.stroke();
     
 
 //UI icon: move
-    vctx.fillStyle = `rgba(200,55,55,0.5)`
-    vctx.fillCircle(UIButtons[0].avg.x, UIButtons[0].avg.y, 8);
-    vctx.fillCircle(UIButtons[3].avg.x, UIButtons[3].avg.y, 8);
-    // vctx.beginPath();
-    // vctx.moveTo(js1.x-size*0.5, js1.y+size*0.25);
-    // vctx.lineTo(js1.x-size*0.25, js1.y+size*0.25);
+    uictx.fillStyle = `rgba(200,55,55,0.5)`
+    uictx.fillCircle(UIButtons[0].avg.x, UIButtons[0].avg.y, 8);
+    uictx.fillCircle(UIButtons[3].avg.x, UIButtons[3].avg.y, 8);
+    // uictx.beginPath();
+    // uictx.moveTo(js1.x-size*0.5, js1.y+size*0.25);
+    // uictx.lineTo(js1.x-size*0.25, js1.y+size*0.25);
 
-    // vctx.stroke();
+    // uictx.stroke();
 //UI icon: jump
-    vctx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 8);
-    vctx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 8);
+    uictx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 8);
+    uictx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 8);
 
 //UI icon: swing
-    vctx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 8);
-    vctx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 8);
+    uictx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 8);
+    uictx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 8);
 
 //UI icon: bite 
 }
