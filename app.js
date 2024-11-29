@@ -1084,6 +1084,17 @@ CanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
     this.fill();
 }
 
+//draw circle function
+CanvasRenderingContext2D.prototype.fillCirclePath = function (x,y,r,b) {
+    //this.beginPath();
+    this.arc (x,y,r,0,2*Math.PI, b);
+    //this.fill();
+}
+CanvasRenderingContext2D.prototype.strokeCirclePath = function (x,y,r) {
+    //this.beginPath();
+    this.arc (x,y,r,0,2*Math.PI);
+    //this.stroke();
+}
 //canvas.addEventListener('click', clickFunction, false);
 //canvas.addEventListener('mouserelease', function(){console.log('mouserel')}, false);
 
@@ -2345,6 +2356,11 @@ function spideyMove(leg) {
             // legMods[leg].y = legMods[leg].jy;
             legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl;
             legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl;
+            // if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3)){
+            //     //only change rotation on "too close" legs 
+            //     legMods[leg].dx += rotate.x - spideyLegs[leg].x;
+            //     legMods[leg].dy += rotate.y - spideyLegs[leg].y;
+            // }
         }
         
         //if the leg crosses spidey's axis reset it
@@ -2355,8 +2371,8 @@ function spideyMove(leg) {
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = rotate.y - spideyLegs[leg].y;
+            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl + rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl + rotate.y - spideyLegs[leg].y;
         }
         
     }
@@ -3179,7 +3195,7 @@ function drawSpidey(x, y) {
         }
         if (legMods[i].anim === walking) {
             //250ms default step ... 1/4 spidey radius 
-            const stepSpeed = 333 - (speed.components[0] + speed.components[1])//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
+            const stepSpeed = Math.min(133, 50*spiScl) + 256 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
             const sec = Math.min(elapsed/stepSpeed, 1);  
             //console.log(Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2))
 
@@ -3744,32 +3760,6 @@ function gravity() {
             }
         }
 
-    //draw collisions
-
-    
-    //context.beginPath();
-    // context.strokeStyle = "#555555"
-
-//collision objects 
-//hard line 
-//hard circle 
-//area box
-//area circle
-
-//other body
-
-//area points
-//areaPoints = [];
-//areaPoints.push({x: 0, y: 0})
-
-//if 
-// areaPoints.forEach((x) => {
-//     const pointdistx = spideyPos.x - x.x;
-//     const pointdisty = spideyPos.x - x.x;
-
-
-// })
-
 //detection circle
 
     let line = 0;
@@ -3825,7 +3815,7 @@ function gravity() {
         const circDepth =  (circRadius - circDist + (spideyRadius)) / spideyRadius - 0.1;
         
         if(circDist < spideyRadius + circRadius) {
-            if(circDist < spideyRadius / 4 + circRadius) {
+            if(circDist < spideyRadius / 6 + circRadius) {
                 
                 //if falling grab hold
                 if(falling && !spacePressed && !shiftPressed){
@@ -3845,8 +3835,8 @@ function gravity() {
                 if(x.solid){
                     // const xpush = (spideyRadius/4) - (circDist - circRadius);
                     // const ypush = (spideyRadius/4) - (circDist - circRadius);
-                    const ypush = copySign((spideyRadius / 4) - Math.abs(circDist - circRadius), circDiff.y);
-                    const xpush = copySign((spideyRadius / 4) - Math.abs(circDist - circRadius), circDiff.x);
+                    const ypush = copySign((spideyRadius / 6) - Math.abs(circDist - circRadius), circDiff.y);
+                    const xpush = copySign((spideyRadius / 6) - Math.abs(circDist - circRadius), circDiff.x);
                     spideyPos.x +=  xpush;
                     spideyPos.y +=  ypush;
                     //console.log(circDist-circRadius, spideyRadius/4, circDepth, xpush, ypush);
@@ -4001,7 +3991,7 @@ function gravity() {
                         y: walkLines[line].p1.y + spideyPos.y}, {x: walkLines[line].p2.x + spideyPos.x, 
                         y: walkLines[line].p2.y + spideyPos.y});
 
-                        if (distC < (spideyRadius / 4)) {
+                        if (distC < (spideyRadius / 6)) {
 
                         //enforce distance 
                         //
@@ -4022,15 +4012,13 @@ function gravity() {
                         const nearest = closestSegmentPoint({x: testx, y: testy}, pointOne, pointTwo);
                         const dx = spideyPos.x - nearest.x;
                         const dy = spideyPos.y - nearest.y;
-                        const ypush = copySign((spideyRadius / 4) - Math.abs(dy), dy)
-                        const xpush = copySign((spideyRadius / 4) - Math.abs(dx), dx)
+                        const ypush = copySign((spideyRadius / 6) - Math.abs(dy), dy)
+                        const xpush = copySign((spideyRadius / 6) - Math.abs(dx), dx)
 
                             //console.log(distC, dx, dy);
                             // console.log(pointTwo);
                             //console.log(xpush, ypush);
                         if (Math.abs(dy) > EPSILON && Math.abs(dy) > Math.abs(dx)) {
-                                
-
                             spideyPos.y += ypush;
                             //setSpeed(0, -speed.components[1] / ());
                             for (let i=0; i < spideyLegs.length; i++) {
@@ -4645,7 +4633,6 @@ function drawObjects(){
                 case cactus:
                     paintCactus(x.id, x.length, x.circID, x.circLen);  
                     break
-                default: paintRockMed(x.id, x.length);
             }
         }
     })
@@ -4942,7 +4929,7 @@ function update(timestamp) {
                                 x: x.x + logoStartX, 
                                 y: x.y + logoStartY, 
                                 speedx: (x.x - letter[tgt2].x)*0.1 * Math.random(), 
-                                speedy: (x.y - letter[tgt2].y)*0.1 - Math.random(), 
+                                speedy: (x.y - letter[tgt2].y)*0.1 - 0.2 * Math.random(), 
                                 start: lastTimestamp,
                                 ox: x.x + logoStartX, 
                                 oy: x.y + logoStartY, 
@@ -5459,14 +5446,14 @@ function initMobileUI(){
         p1: p2, 
         p2: p3, 
         p3: p4, 
-        avg: {x: (p2.x + p3.x + p4.x) /3, y: (p2.y + p3.y + p4.y) /3}})
+        avg: {x: ((p2.x + p3.x + p4.x) /3)+16 * (size/100), y: (p2.y + p3.y + p4.y) /3}})
     // swing button 
     const p5 = {x: viewport.width*0.5-10, y: viewport.height+3}
     UIButtons.push({
         p1: p3, 
         p2: p4, 
         p3: p5, 
-        avg: {x: (p3.x + p4.x + p5.x) /3, y: (p3.y + p4.y + p5.y) /3}})
+        avg: {x: (p3.x + p4.x + p5.x) /3, y: ((p3.y + p4.y + p5.y) /3)+8 * (size/100)}})
 
     // right side
     const p1r = {x: viewport.width, y: js2.y-size*0.5};
@@ -5483,14 +5470,14 @@ function initMobileUI(){
         p1: p2r, 
         p2: p3r, 
         p3: p4r, 
-        avg: {x: (p2r.x + p3r.x + p4r.x) /3, y: (p2r.y + p3r.y + p4r.y) /3}})
+        avg: {x: ((p2r.x + p3r.x + p4r.x) /3)-16 * (size/100), y: (p2r.y + p3r.y + p4r.y) /3}})
     // swing button 
     const p5r = {x: viewport.width*0.5+10, y: viewport.height+3}
     UIButtons.push({
         p1: p3r, 
         p2: p4r, 
         p3: p5r, 
-        avg: {x: (p3r.x + p4r.x + p5r.x) /3, y: (p3r.y + p4r.y + p5r.y) /3}})
+        avg: {x: (p3r.x + p4r.x + p5r.x) /3, y: ((p3r.y + p4r.y + p5r.y) /3)+8 * (size/100)}})
 
 }
 
@@ -5500,46 +5487,21 @@ function drawMobileUI() {
         uictx.fillCircle(js1.x, js1.y, size);
         uictx.fillCircle(js2.x, js2.y, size);
         uictx.fillStyle = "#000000"}
-    uictx.strokeStyle = `rgba(0,0,0,0.25)`
-    uictx.lineWidth = 8;
-    uictx.beginPath();
-    uictx.moveTo(UIButtons[0].p1.x, UIButtons[0].p1.y);
-    uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
-    //swing
-    uictx.lineTo(UIButtons[2].p3.x, UIButtons[2].p3.y);
-
-    uictx.moveTo(UIButtons[0].p2.x, UIButtons[0].p2.y);
-    uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
-    //jump
-    uictx.moveTo(UIButtons[1].p2.x, UIButtons[1].p2.y);
-    uictx.lineTo(UIButtons[1].p3.x, UIButtons[1].p3.y);
-
-    //right side
-    uictx.moveTo(UIButtons[3].p1.x, UIButtons[3].p1.y);
-    uictx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
-    //swing
-    uictx.lineTo(UIButtons[5].p3.x, UIButtons[5].p3.y);
     
-    uictx.moveTo(UIButtons[3].p2.x, UIButtons[3].p2.y);
-    uictx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
-    //jump
-    uictx.moveTo(UIButtons[4].p2.x, UIButtons[4].p2.y);
-    uictx.lineTo(UIButtons[4].p3.x, UIButtons[4].p3.y);
-    
-    uictx.stroke();
     uictx.strokeStyle = `rgba(255,255,255,0.25)`
-    uictx.lineWidth = 3;
-    uictx.stroke();
-    
+    uictx.fillStyle = `rgba(255,255,255,0.25)`
+//UI icons: Web + Grab (R/L, B/W)
+    uictx.fillCircle(16, UIButtons[0].p1.y - 32, 8);
+    uictx.fillStyle = `rgba(0,0,0,0.25)`
+    uictx.fillCircle(viewport.width - 16, UIButtons[0].p1.y - 32, 8);
+    uictx.fillStyle = `rgba(255,255,255,0.25)`
+    uictx.lineWidth = 4 * (size/100);
 
 //UI icon: move
     // uictx.fillCircle(UIButtons[0].avg.x, UIButtons[0].avg.y, 8);
     // uictx.fillCircle(UIButtons[3].avg.x, UIButtons[3].avg.y, 8);
-    uictx.strokeStyle = `rgba(255,255,255,0.25)`
-    //uictx.fillStyle = `rgba(255,255,255,0.25)`
     uictx.beginPath();
     
-    uictx.lineWidth = 4;
     
     uictx.moveTo(UIButtons[0].avg.x - size*0.15, UIButtons[0].avg.y + size * 0.07);
     uictx.lineTo(UIButtons[0].avg.x - size*0.25, UIButtons[0].avg.y);
@@ -5569,7 +5531,6 @@ function drawMobileUI() {
     uictx.stroke();
 
     uictx.beginPath();
-    uictx.lineWidth = 4;
     
     uictx.moveTo(UIButtons[3].avg.x - size*0.15, UIButtons[3].avg.y + size * 0.07);
     uictx.lineTo(UIButtons[3].avg.x - size*0.25, UIButtons[3].avg.y);
@@ -5597,17 +5558,141 @@ function drawMobileUI() {
     uictx.lineTo(UIButtons[3].avg.x, UIButtons[3].avg.y + size*0.25);
     uictx.stroke();
 
-    uictx.fillStyle = `rgba(200,55,55,0.25)`
-    // uictx.stroke();
 //UI icon: jump
-    uictx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 8);
-    uictx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 8);
+    uictx.lineWidth = 2 * (size/100);
+    //uictx.strokeStyle = `rgba(127,127,127,0.5)`
+    // uictx.stroke();
+    uictx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 10 * (size/100));
+    uictx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 10 * (size/100));
+    uictx.save();
+    uictx.beginPath();
+    uictx.rect(UIButtons[1].avg.x-150, UIButtons[1].avg.y-150,UIButtons[1].avg.x+150, UIButtons[1].avg.y+150);
+    uictx.fillCirclePath(UIButtons[1].avg.x, UIButtons[1].avg.y, 10 * (size/100), true);
+    uictx.clip();
+    uictx.beginPath();
+    for(i=0;i<spideyLegs.length;i++){
+        const xanchor = UIButtons[1].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+        * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
+        const yanchor = UIButtons[1].avg.y - spideyLegs[i].y * (size/100)
+            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        //uictx.beginPath();
+        uictx.moveTo(UIButtons[1].avg.x + legOrigins[i].x, UIButtons[1].avg.y + legOrigins[i].y);
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[1].avg.x + spideyJump[i].x * (size/100), UIButtons[1].avg.y + spideyJump[i].y * (size/100))
+        
+        uictx.moveTo(UIButtons[1].avg.x + spideyJump[i].x * (size/100), UIButtons[1].avg.y + spideyJump[i].y * (size/100));
+        uictx.strokeCirclePath(UIButtons[1].avg.x + spideyJump[i].x * (size/100), UIButtons[1].avg.y + spideyJump[i].y * (size/100), 2.5 * (size/100));
+    }
+    uictx.stroke();
+    uictx.restore();
 
+    uictx.save();
+    uictx.beginPath();
+    uictx.rect(UIButtons[4].avg.x-150, UIButtons[4].avg.y-150,UIButtons[4].avg.x+150, UIButtons[4].avg.y+150);
+    uictx.fillCirclePath(UIButtons[4].avg.x, UIButtons[4].avg.y, 10 * (size/100), true);
+    uictx.clip();
+    uictx.beginPath();
+    for(i=0;i<spideyLegs.length;i++){
+        const xanchor = UIButtons[4].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+        * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
+        const yanchor = UIButtons[4].avg.y - spideyLegs[i].y * (size/100)
+            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        //uictx.beginPath();
+        uictx.moveTo(UIButtons[4].avg.x + legOrigins[i].x, UIButtons[4].avg.y + legOrigins[i].y);
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[4].avg.x + spideyJump[i].x * (size/100), UIButtons[4].avg.y + spideyJump[i].y * (size/100));
+
+        uictx.moveTo(UIButtons[4].avg.x + spideyJump[i].x * (size/100), UIButtons[4].avg.y + spideyJump[i].y * (size/100));
+        uictx.strokeCirclePath(UIButtons[4].avg.x + spideyJump[i].x * (size/100), UIButtons[4].avg.y + spideyJump[i].y * (size/100), 2.5 * (size/100));
+    }
+    uictx.stroke();
+    uictx.restore();
+    
 //UI icon: swing
-    uictx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 8);
-    uictx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 8);
+    uictx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 10 * (size/100));
+    uictx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 10 * (size/100));
+    uictx.save();
+    uictx.beginPath();
+    uictx.rect(UIButtons[2].p1.x-50, UIButtons[2].p1.y+1,UIButtons[2].p3.x+50, UIButtons[2].p3.y+50);
+    uictx.fillCirclePath(UIButtons[2].avg.x, UIButtons[2].avg.y, 10 * (size/100), true);
+    uictx.clip();
+    uictx.beginPath();
+    uictx.moveTo(UIButtons[2].p1.x,UIButtons[2].p1.y);
+    uictx.lineTo(UIButtons[2].avg.x,UIButtons[2].avg.y);
+    for(i=0;i<spideyLegs.length;i++){
+        const xanchor = UIButtons[2].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+        * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
+        const yanchor = UIButtons[2].avg.y - spideyLegs[i].y * (size/100)
+            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        //uictx.beginPath();
+        uictx.moveTo(UIButtons[2].avg.x + legOrigins[i].x, UIButtons[2].avg.y + legOrigins[i].y);
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[2].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + spideyJump[i].y*0.75 * (size/100))
+        
+        uictx.moveTo(UIButtons[2].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + spideyJump[i].y*0.75 * (size/100));
+        uictx.strokeCirclePath(UIButtons[2].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + spideyJump[i].y*0.75 * (size/100), 2 * (size/100));
+    }
+    uictx.stroke();
+    uictx.restore();
+
+    uictx.save();
+    uictx.beginPath();
+    uictx.rect(UIButtons[5].avg.x-50, UIButtons[5].p1.y+1,UIButtons[5].avg.x+50, UIButtons[5].avg.y+50);
+    uictx.fillCirclePath(UIButtons[5].avg.x, UIButtons[5].avg.y, 10 * (size/100), true);
+    uictx.clip();
+    uictx.beginPath();
+    uictx.moveTo(UIButtons[5].p1.x,UIButtons[5].p1.y);
+    uictx.lineTo(UIButtons[5].avg.x,UIButtons[5].avg.y);
+    for(i=0;i<spideyLegs.length;i++){
+        const xanchor = UIButtons[5].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+        * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
+        const yanchor = UIButtons[5].avg.y - spideyLegs[i].y * (size/100)
+            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        //uictx.beginPath();
+        uictx.moveTo(UIButtons[5].avg.x + legOrigins[i].x, UIButtons[5].avg.y + legOrigins[i].y);
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[5].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + spideyJump[i].y*0.75 * (size/100))
+        
+        uictx.moveTo(UIButtons[5].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + spideyJump[i].y*0.75 * (size/100));
+        uictx.strokeCirclePath(UIButtons[5].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + spideyJump[i].y*0.75 * (size/100), 2 * (size/100));
+    }
+    uictx.stroke();
+    uictx.restore();
+    
 
 //UI icon: bite 
+
+
+
+
+//outlines
+
+uictx.strokeStyle = `rgba(0,0,0,0.10)`
+uictx.lineWidth = 8;
+uictx.beginPath();
+uictx.moveTo(UIButtons[0].p1.x, UIButtons[0].p1.y);
+uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+//swing
+uictx.lineTo(UIButtons[2].p3.x, UIButtons[2].p3.y);
+
+uictx.moveTo(UIButtons[0].p2.x, UIButtons[0].p2.y);
+uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+//jump
+uictx.moveTo(UIButtons[1].p2.x, UIButtons[1].p2.y);
+uictx.lineTo(UIButtons[1].p3.x, UIButtons[1].p3.y);
+
+//right side
+uictx.moveTo(UIButtons[3].p1.x, UIButtons[3].p1.y);
+uictx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
+//swing
+uictx.lineTo(UIButtons[5].p3.x, UIButtons[5].p3.y);
+
+uictx.moveTo(UIButtons[3].p2.x, UIButtons[3].p2.y);
+uictx.lineTo(UIButtons[3].p3.x, UIButtons[3].p3.y);
+//jump
+uictx.moveTo(UIButtons[4].p2.x, UIButtons[4].p2.y);
+uictx.lineTo(UIButtons[4].p3.x, UIButtons[4].p3.y);
+
+uictx.stroke();
+uictx.strokeStyle = `rgba(255,255,255,0.25)`
+uictx.lineWidth = 3;
+uictx.stroke();
 }
 
 
