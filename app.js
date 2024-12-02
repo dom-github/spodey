@@ -1395,10 +1395,10 @@ for(let i=333;i<worldSize.width+333;i+=300){
             //drawRockMed(i, ground, scale);
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
-        } else if (type < 0.75) {
-            i+=40;
-            drawCactus(i, ground + 150 * Math.random(), 1);
-            i+=40;
+        // } else if (type < 0.75) {
+            // i+=40;
+            // drawCactus(i, ground + 150 * Math.random(), 1);
+            // i+=40;
         } else if (type < 0.95) {
             i+=300;
             drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(8 * Math.random())), 40*Math.random()-20);
@@ -1431,6 +1431,70 @@ function mulberry32(a) {
 }
 
 function paintGround(id, length){
+    
+    // Create gradient
+    let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
+    //dusk-y FFC9D6 FFF3E5
+    // sky.addColorStop(0, "#FFC9D6");
+    // sky.addColorStop(0.5, "#FFF3E5");
+    
+    sky.addColorStop(0, "#001749");
+    sky.addColorStop(0.75, "#0252FF");
+    sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
+
+    // Fill with gradient
+    bgctx.fillStyle = sky;
+    bgctx.fillRect(0, 0, worldSize.width, worldSize.height);
+
+    //background
+    const box = areaBoxes[id]
+    // var bkgrd = bgctx.createLinearGradient(0, box.p2.y * 0.95, 0, worldSize.height);
+    // // bkgrd.addColorStop(0.1, 'rgba(221, 135, 107, 0.5)'); //221 185 157 //#DDB99D
+    // // bkgrd.addColorStop(0.5, 'rgba(226, 208, 140, 1)'); //#E2D08C //
+    // bkgrd.addColorStop(0.1, 'rgba(226, 208, 140, 1)'); 
+    // bkgrd.addColorStop(0.5, 'rgba(221, 200, 107, 1)'); 
+    // bgctx.fillStyle = bkgrd;
+    // bgctx.fillRect(box.p1.x, box.p2.y * 0.95, box.p2.x, box.p1.y); 
+    // bgctx.beginPath();
+    // bgctx.moveTo(box.p1.x, box.p2.y)
+    // bgctx.bezierCurveTo(worldSize.width * random, box.p2.y - (150 * random), worldSize.width* 2 * random, worldSize.height - (150 * random), worldSize.width, worldSize.height)
+    // bgctx.fill();
+    
+    
+    const chunkW = worldSize.width / 1920;
+    //bgctx.fillStyle = "#FFE57F";
+    //distant terrain
+    let far = bgctx.createLinearGradient(0, box.p2.y - 300, 0, worldSize.height-200)
+    far.addColorStop(0, "#007F5B");
+    far.addColorStop(0.5, "#00996B");
+    bgctx.fillStyle = far;
+    bgctx.fillRect(box.p1.x, box.p2.y-31, box.p2.x, box.p1.y-31);
+    for(let i=0;i<chunkW;i++){
+        const random = mulberry32(i + id + length)();
+        bgctx.beginPath();
+        bgctx.moveTo(box.p1.x + (1920*i) - 960, box.p2.y-30)
+        bgctx.bezierCurveTo((1920*i)+ 1920 * random, box.p2.y - (200 * random), (1920*i) + 1920 * random, worldSize.height - (250 * random), (1920*i)+1920, box.p2.y-30)
+        bgctx.fill();
+    }
+
+    //sand
+    let hill = bgctx.createLinearGradient(0, box.p2.y * 0.95, 0, worldSize.height)
+    hill.addColorStop(0, "#69BC58");
+    hill.addColorStop(1, "#76D162");
+    bgctx.fillStyle = hill;
+    bgctx.fillRect(box.p1.x, box.p2.y-15, box.p2.x, box.p1.y-15);
+    for(let i=0;i<chunkW;i++){
+        const random = mulberry32(i + id + length)();
+        bgctx.beginPath();
+        bgctx.moveTo(box.p1.x + (1920*i), box.p2.y-15)
+        bgctx.bezierCurveTo((1920*i)+ 1920 * random, box.p2.y - (180*random), (1920*i) + 1920 * random, worldSize.height - (180 * random), (1920*i)+1920, worldSize.height-15)
+        bgctx.fill();
+    }
+    
+    bgctx.fillStyle = "#000000";
+};
+
+function paintDesertGround(id, length){
     
     // Create gradient
     let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
@@ -2337,6 +2401,7 @@ function spideyMove(leg) {
     //         count++
     //     } 
     // }
+    const mirror = leg < 4 ? leg + 4: leg - 4;
     if (legMods[leg].anim === grabbing) {
         if (jactive){
             context.fillStyle = "#ff0000";
@@ -2346,7 +2411,7 @@ function spideyMove(leg) {
         
          const dist = Math.sqrt(x * x + y * y);
         //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y);
-        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3)){}
+        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3) && legMods[mirror].anim !== walking)){}
         else if(Math.abs(speed.components[0]) > EPSILON
             || Math.abs(speed.components[1]) > EPSILON){
             //console.log("Moving");
@@ -2354,17 +2419,17 @@ function spideyMove(leg) {
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl;
-            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl;
-            // if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3)){
-            //     //only change rotation on "too close" legs 
-            //     legMods[leg].dx += rotate.x - spideyLegs[leg].x;
-            //     legMods[leg].dy += rotate.y - spideyLegs[leg].y;
-            // }
+            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl + rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl + rotate.y - spideyLegs[leg].y;
+            if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
+                //only change rotation on "too close" legs 
+                legMods[leg].dx += rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy += rotate.y - spideyLegs[leg].y;
+            }
         }
         
         //if the leg crosses spidey's axis reset it
-        if ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(spideyLegs[leg].x)))
+        if ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x)))
         || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y)))) {
             //console.log("Crossing");
             legMods[leg].anim = walking;
@@ -2456,9 +2521,8 @@ function spideyMove(leg) {
                 // if ((legMods[leg].start < lastTimestamp - 200
                 //     && dist > spideyRadius*0.1)
                 //     || dist > spideyRadius*0.25)
-                
                 if(dist > spideyRadius*0.25){
-                    console.log("recalculate", dist, leg);
+                    //console.log("recalculate", dist, leg);
                     legMods[leg].x = legMods[leg].jx;
                     legMods[leg].y = legMods[leg].jy;
                     legMods[leg].start = lastTimestamp;
@@ -3073,9 +3137,13 @@ let xrotation = 0.1;
 let prevyrot = [yrotation,0,0,0,
     yrotation,0,0,0,
     yrotation,0,0,0,
+    yrotation,0,0,0,
+    yrotation,0,0,0,
     0,0,0,yrotation
 ];
 let prevxrot = [xrotation,0,0,0,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation];
@@ -4539,15 +4607,14 @@ function move() {
             // legMods[i].dy -= ymov;
             // legMods[i].jy -= ymov;
         } 
-        // else if (legMods[i].anim === walking) {
-            // legMods[i].x += xmov*0.5;
-            // legMods[i].y += ymov*0.5;
+        else if (legMods[i].anim === walking) {
+            legMods[i].x -= xmov;
+            legMods[i].y -= ymov;
             // if(legMods[i].start !== lastTimestamp){
-            //     legMods[i].dx -= xmov;
-            //     legMods[i].dy -= ymov;
-            // }
-            
-        // }
+            //     legMods[i].dx += xmov;
+            //     legMods[i].dy += ymov;
+            // }   
+        }
         
         // if (0 + (radius) + buffer <= spideyPos.x &&
         //     spideyPos.x <= worldCanvas.width - (radius) - buffer)
@@ -4928,8 +4995,8 @@ function update(timestamp) {
                                 type: 3, 
                                 x: x.x + logoStartX, 
                                 y: x.y + logoStartY, 
-                                speedx: (x.x - letter[tgt2].x)*0.1 * Math.random(), 
-                                speedy: (x.y - letter[tgt2].y)*0.1 - 0.2 * Math.random(), 
+                                speedx: (x.x - letter[tgt2].x)*0.05, 
+                                speedy: (x.y - letter[tgt2].y)*0.05, 
                                 start: lastTimestamp,
                                 ox: x.x + logoStartX, 
                                 oy: x.y + logoStartY, 
@@ -5076,7 +5143,7 @@ function update(timestamp) {
         vctx.drawImage(canvas, 0, 0,
             // Math.max(0,Math.min(spideyPos.x - (w * 0.5), worldSize.width - w)),
             // Math.max(0, Math.min((spideyPos.y) - (h * 0.5), worldSize.height - h)),
-            overdrawX, overdrawY, 
+            w, h, 
             0, 0, 
             w, h)
         vctx.drawImage(UI, 0, 0,
@@ -5693,6 +5760,20 @@ uictx.stroke();
 uictx.strokeStyle = `rgba(255,255,255,0.25)`
 uictx.lineWidth = 3;
 uictx.stroke();
+
+//
+// uictx.strokeStyle = `rgba(0,0,0,0.25)`
+// uictx.lineWidth = 8;
+// uictx.beginPath();
+// uictx.moveTo(UIButtons[0].p1.x, UIButtons[0].p1.y);
+// uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+// uictx.moveTo(UIButtons[0].p2.x, UIButtons[0].p2.y);
+// uictx.lineTo(UIButtons[0].p3.x, UIButtons[0].p3.y);
+
+// uictx.stroke();
+// uictx.strokeStyle = `rgba(255,255,255,0.75)`
+// uictx.lineWidth = 3;
+// uictx.stroke();
 }
 
 
