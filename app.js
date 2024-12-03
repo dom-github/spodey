@@ -2411,26 +2411,30 @@ function spideyMove(leg) {
         
          const dist = Math.sqrt(x * x + y * y);
         //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y);
-        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3) && legMods[mirror].anim !== walking)){}
+        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3))){}
         else if(Math.abs(speed.components[0]) > EPSILON
             || Math.abs(speed.components[1]) > EPSILON){
+            if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3)  && legMods[mirror].anim === walking){
+                //only change rotation on "too close" legs 
+                // legMods[leg].dx += rotate.x - spideyLegs[leg].x;
+                // legMods[leg].dy += rotate.y - spideyLegs[leg].y;
+            } else {
             //console.log("Moving");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl + rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl + rotate.y - spideyLegs[leg].y;
-            if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
-                //only change rotation on "too close" legs 
-                legMods[leg].dx += rotate.x - spideyLegs[leg].x;
-                legMods[leg].dy += rotate.y - spideyLegs[leg].y;
+            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl;
+            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl;
+
             }
         }
         
         //if the leg crosses spidey's axis reset it
-        if ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x)))
-        || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y)))) {
+        if (legMods[mirror].anim === walking
+        && ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x)))
+        || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 
+            || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y))))) {
             //console.log("Crossing");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
@@ -2613,6 +2617,7 @@ function spideyCollider() {
     };
 
     context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius);
+    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius * 0.66 * Math.min(1.33, spiScl));
     context.strokeStyle = "#ee9999"
     context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius / 3);
     context.strokeStyle = "#000000"
@@ -3162,11 +3167,11 @@ function drawSpidey(x, y) {
     let sumx = 0;
     let sumy = 0;
     for(let e=0; e < spideyLegs.length; e++) {
-        if(!falling){
+        if(!falling && legMods[e].anim < grabWeb){
             sumy += legMods[e].jy + spideyLegs[e].y;
             sumx += legMods[e].jx + spideyLegs[e].x;
-            yrotation = doubleClamp(sumy / 8, -spideyRadius*Math.min(1, spiScl), spideyRadius*Math.min(1, spiScl));
-            xrotation = doubleClamp(sumx / 8, -spideyRadius*Math.min(1, spiScl), spideyRadius*Math.min(1, spiScl));
+            yrotation = doubleClamp(sumy / 8, -spideyRadius * 0.65 * Math.min(1.33, spiScl), spideyRadius * 0.65 * Math.min(1.33, spiScl));
+            xrotation = doubleClamp(sumx / 8, -spideyRadius * 0.65 * Math.min(1.33, spiScl), spideyRadius * 0.65 * Math.min(1.33, spiScl));
         }
     }
     if (Math.abs(yrotation) >= 0) {
