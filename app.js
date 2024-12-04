@@ -667,6 +667,8 @@ function mousedown(e){
                     legMods[closest].start = lastTimestamp;
                     legMods[closest].dx = -spideyLegs[closest].x;
                     legMods[closest].dy = -spideyLegs[closest].y;
+                    legMods[closest].x = legMods[closest].jx;
+                    legMods[closest].y = legMods[closest].jy;
                 } else if (count === 1 && LMBHeld - LMBDouble < 500 ) {
                     //console.log("Ldlbclick!")
                         //restart anim on dblclick
@@ -674,10 +676,14 @@ function mousedown(e){
                         legMods[closest].start = lastTimestamp;
                         legMods[closest].dx = -spideyLegs[closest].x;
                         legMods[closest].dy = -spideyLegs[closest].y;
+                        legMods[closest].x = legMods[closest].jx;
+                        legMods[closest].y = legMods[closest].jy;
                         legMods[mirror].anim = grabWeb;
                         legMods[mirror].start = lastTimestamp;
                         legMods[mirror].dx = -spideyLegs[mirror].x;
                         legMods[mirror].dy = -spideyLegs[mirror].y;
+                        legMods[mirror].x = legMods[mirror].jx;
+                        legMods[mirror].y = legMods[mirror].jy;
                     }
                 
             
@@ -690,15 +696,21 @@ function mousedown(e){
                 legMods[closest].start = lastTimestamp;
                 legMods[closest].dx = 0;
                 legMods[closest].dy = -spideyLegs[closest].y * 2;
+                legMods[closest].x = legMods[closest].jx;
+                legMods[closest].y = legMods[closest].jy;
             }else if (count === 1 && RMBHeld - RMBDouble < 500){
                 //console.log("Rdlbclick!")
                 legMods[closest].anim = readyStrike;
                 legMods[closest].start = lastTimestamp;
                 legMods[closest].dx = 0;
                 legMods[closest].dy = -spideyLegs[closest].y * 2;
+                legMods[closest].x = legMods[closest].jx;
+                legMods[closest].y = legMods[closest].jy;
                 legMods[mirror].anim = readyStrike;
                 legMods[mirror].dx = 0;
                 legMods[mirror].dy = -spideyLegs[mirror].y * 2;
+                legMods[mirror].x = legMods[mirror].jx;
+                legMods[mirror].y = legMods[mirror].jy;
                 legMods[mirror].start = lastTimestamp;
             }
             
@@ -2424,8 +2436,8 @@ function spideyMove(leg) {
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl;
-            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl;
+            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl + rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl + rotate.y - spideyLegs[leg].y;
 
             }
         }
@@ -2445,7 +2457,6 @@ function spideyMove(leg) {
         }
         
     }
-
     
         //enforce destination to valid grab point
         //always runs for now
@@ -2502,13 +2513,20 @@ function spideyMove(leg) {
                 }
             }
         }
-        
+        //try to reset if leg has a valid walkarea
+        if(walkArea && legMods[leg].anim === walking && legMods[leg].start === lastTimestamp && legMods[leg].dx !== 0 && legMods[leg].dy !== 0){
+            legMods[leg].dx = 0;
+            legMods[leg].dy = 0;
+            legMods[leg].x = legMods[leg].jx;
+            legMods[leg].y = legMods[leg].jy;
+            legMods[leg].start = lastTimestamp;
+        }
         //landing on within walkable areas
         if(walkArea && (legMods[leg].anim === none || (legMods[leg].anim === jumping && lastTimestamp - legMods[leg].start > 600)) && !spacePressed && !shiftPressed) {
             legMods[leg].anim = grabbing;
             legMods[leg].start = 0;
-            legMods[leg].x = legMods[leg].jx;
-            legMods[leg].y = legMods[leg].jy;
+            legMods[leg].x = legMods[leg].dx;
+            legMods[leg].y = legMods[leg].dy;
             footStepLand(leg);
         }
         if(line >= 0 && legMods[leg].anim !== grabbing) {
@@ -2525,15 +2543,20 @@ function spideyMove(leg) {
                 // if ((legMods[leg].start < lastTimestamp - 200
                 //     && dist > spideyRadius*0.1)
                 //     || dist > spideyRadius*0.25)
+                legMods[leg].dx =  grab.x - spideyLegs[leg].x;
+                legMods[leg].dy =  grab.y - spideyLegs[leg].y;
                 if(dist > spideyRadius*0.25){
                     //console.log("recalculate", dist, leg);
+                    //legMods[leg].anim = none;
                     legMods[leg].x = legMods[leg].jx;
                     legMods[leg].y = legMods[leg].jy;
+                    if(dist > spideyRadius){
+                        legMods[leg].dx = (spideyJump[leg].x )*0.2;
+                        legMods[leg].dy = (-5 * spiScl) + (spideyJump[leg].y - spideyLegs[leg].y)*0.66;
+                    }
                     legMods[leg].start = lastTimestamp;
                 }
                 
-                legMods[leg].dx =  grab.x - spideyLegs[leg].x;
-                legMods[leg].dy =  grab.y - spideyLegs[leg].y;
             
             }
 
@@ -2564,8 +2587,10 @@ function spideyMove(leg) {
                 legMods[leg].start = lastTimestamp;
                 legMods[leg].x = legMods[leg].jx;
                 legMods[leg].y = legMods[leg].jy;
-                legMods[leg].dx = 0;
-                legMods[leg].dy = -spideyRadius*0.15;//-15 * spiScl * Math.min(1.33, Math.max(spiScl, 0.5));
+                // legMods[leg].dx = 0;
+                // legMods[leg].dy = -spideyRadius*0.15;
+                legMods[leg].dx = (spideyJump[leg].x )*0.2;
+                legMods[leg].dy = -5 + (spideyJump[leg].y - spideyLegs[leg].y)*0.75;
                 //fallSFX(leg+8)
             }
             
@@ -3170,8 +3195,8 @@ function drawSpidey(x, y) {
         if(!falling && legMods[e].anim < grabWeb){
             sumy += legMods[e].jy + spideyLegs[e].y;
             sumx += legMods[e].jx + spideyLegs[e].x;
-            yrotation = doubleClamp(sumy / 8, -spideyRadius * 0.65 * Math.min(1.33, spiScl), spideyRadius * 0.65 * Math.min(1.33, spiScl));
-            xrotation = doubleClamp(sumx / 8, -spideyRadius * 0.65 * Math.min(1.33, spiScl), spideyRadius * 0.65 * Math.min(1.33, spiScl));
+            yrotation = doubleClamp(sumy / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.5 * Math.min(1.33, spiScl));
+            xrotation = doubleClamp(sumx / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.5 * Math.min(1.33, spiScl));
         }
     }
     if (Math.abs(yrotation) >= 0) {
@@ -3253,7 +3278,7 @@ function drawSpidey(x, y) {
             {
                 legMods[i].x = legMods[i].jx;
                 legMods[i].y = legMods[i].jy;
-            } else if (sec === 1 && legMods[i].anim !== none) {
+            } else if (sec === 1) {
                 //console.log("stopping:", ox, ex, oy, ey, sec);
                 legMods[i].x = legMods[i].dx;
                 legMods[i].y = legMods[i].dy;
@@ -3268,7 +3293,7 @@ function drawSpidey(x, y) {
         }
         if (legMods[i].anim === walking) {
             //250ms default step ... 1/4 spidey radius 
-            const stepSpeed = Math.min(133, 50*spiScl) + 256 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
+            const stepSpeed = Math.min(133, 50*spiScl) + 216 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*2//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
             const sec = Math.min(elapsed/stepSpeed, 1);  
             //console.log(Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2))
 
@@ -4613,12 +4638,12 @@ function move() {
             // legMods[i].jy -= ymov;
         } 
         else if (legMods[i].anim === walking) {
-            legMods[i].x -= xmov;
-            legMods[i].y -= ymov;
-            // if(legMods[i].start !== lastTimestamp){
-            //     legMods[i].dx += xmov;
-            //     legMods[i].dy += ymov;
-            // }   
+            legMods[i].x -= xmov * 0.5;
+            legMods[i].y -= ymov * 0.5;
+            if(legMods[i].start === lastTimestamp){
+                legMods[i].dx += xmov;
+                legMods[i].dy += ymov;
+            }   
         }
         
         // if (0 + (radius) + buffer <= spideyPos.x &&
