@@ -4,6 +4,7 @@ const canvas = document.getElementById("worldCanvas");
 const UI = document.getElementById("UI");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
+const offscreen = background.transferControlToOffscreen();
 
 
 //viewport.id = "viewport";
@@ -17,7 +18,7 @@ const context = canvas.getContext("2d", { alpha: false });
 const vctx = viewport.getContext("2d", { alpha: false });
 const uictx = UI.getContext("2d", { alpha: true });
 
-const bgctx = background.getContext("2d", { alpha: false });
+const bgctx = offscreen.getContext("2d", { alpha: true });
 
 
 console.log(viewport.clientHeight, viewport.clientWidth)
@@ -26,9 +27,12 @@ console.log(window.innerHeight, window.innerWidth)
 
 //15360
 let worldSize = {width: 15360, height: 6666};
+const bgOverflow = 150;
 
-background.width = window.innerWidth;
-background.height = window.innerHeight;
+offscreen.width = window.innerWidth + bgOverflow*2;
+offscreen.height = window.innerHeight + bgOverflow*2;
+bgctx.width = window.innerWidth;
+bgctx.height = window.innerHeight;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 // canvas.width = worldSize.width;
@@ -42,7 +46,7 @@ let worldScale = 1;
 window.onresize = setDim;
 function setDim() {
 
-    console.log("Viewport=",viewport,"canvas=",canvas,"background=",background)
+    //console.log("Viewport=",viewport,"canvas=",canvas,"background=",background)
     //reinit
 
 
@@ -57,9 +61,11 @@ function setDim() {
     uictx.height = window.innerHeight;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    background.width = window.innerWidth;
-    background.height = window.innerHeight;
+    bgctx.width = window.innerWidth;
+    bgctx.height = window.innerHeight;
     
+    offscreen.width = window.innerWidth + bgOverflow*2;
+    offscreen.height = window.innerHeight + bgOverflow*2;
 
     if(startgame) {
         // original values
@@ -112,7 +118,7 @@ function setDim() {
     // bgctx.width = window.innerWidth;
     // bgctx.height = window.innerHeight;
     scaleWorld(curWScale);
-    
+    //console.log("bg",bgctx.width, bgctx.height, "cx",context.width, context.height, "vp",viewport.width, viewport.height)
     // viewport.width = Math.max(400, viewport.width);
     // viewport.height = Math.max(300,viewport.height);    
 }
@@ -456,7 +462,9 @@ let OlegOrigins = [
     {x: 5, y: 1},]
 
 function scaleWorld(news){
-    
+    //temp: redraw background hack
+    bgOffset.x = -9999;
+    bgOffset.y = -9999;
         context.scale(1/worldScale, 1/worldScale);
         bgctx.scale(1/worldScale, 1/worldScale);
         worldScale = Math.max(1, Math.min(8,news));
@@ -1349,6 +1357,7 @@ const rockMed = 1;
 const stopSign = 2;
 const cactus = 3;
 const tree = 4;
+const flower = 4;
 
 
 //boundaries
@@ -1408,8 +1417,9 @@ for(let i=333;i<worldSize.width+333;i+=300){
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
         // } else if (type < 0.75) {
-            // i+=40;
-            // drawCactus(i, ground + 150 * Math.random(), 1);
+        //     i+=40;
+        //     drawFlower(i, ground, scale);
+            //drawCactus(i, ground + 150 * Math.random(), 1);
             // i+=40;
         } else if (type < 0.95) {
             i+=300;
@@ -1659,6 +1669,79 @@ function paintRockMed(id, len){
     bgctx.strokeStyle = "#000000";
     bgctx.fillStyle = "#000000";
 }
+
+//lets draw a flower 
+//{^^^^^}
+// \( )/
+//  ||
+//  \\
+//  ||<O
+//  //
+//0>||
+//  ||
+
+function drawFlower(x,y,s,r){
+    let height = r? Math.abs(100 * s) : 100 * s;
+    
+    const width = 8 * s;
+    const top = y - height;
+    const leftSide = x - width;
+    const rightSide = x + width;
+
+    const id = boundaryColliders.length;
+    
+    //stalk
+    boundaryColliders.push({p1: {x: rightSide, y: y}, p2: {x: rightSide, y: top}, solid: false});
+    boundaryColliders.push({p1: {x: leftSide, y: y}, p2: {x: leftSide, y: top}, solid: false});
+
+    //leafL
+    areaCircles.push({x: leftSide, y: top - height * 0.37, r: width * 5, half: false, solid: true});
+    boundaryCircles.push({x: leftSide, y: top - height * 0.37, r: width * 5, half: false, solid: false});
+
+    //leafR
+    areaCircles.push({x: rightSide, y: top - height * 0.77, r: width * 4, half: false, solid: true});
+    boundaryCircles.push({x: rightSide, y: top - height * 0.77, r: width * 4, half: false, solid: false});
+
+    //bloom
+    //circle at top, 2 vert lines on side, line towards top, a middle peak
+    areaCircles.push({x: x, y: top, r: width * 8, half: false, solid: false});
+    boundaryCircles.push({x: x, y: top, r: width * 8, half: false, solid: false});
+
+    boundaryColliders.push({p1: {x: x-width * 4, y: top + width * 4}, p2: {x: x-width * 4, y: top + width * 8}, solid: false});
+    boundaryColliders.push({p1: {x: x+width * 4, y: top + width * 4}, p2: {x: x+width * 4, y: top + width * 8}, solid: false});
+
+    boundaryColliders.push({p1: {x: x-width * 4, y: top + width * 8}, p2: {x: x, y: top}, solid: false});
+    boundaryColliders.push({p1: {x: x+width * 4, y: top + width * 8}, p2: {x: x, y: top}, solid: false});
+
+    boundaryColliders.push({p1: {x: x-width * 4, y: top + width * 4}, p2: {x: x, y: top + width * 8}, solid: false});
+    boundaryColliders.push({p1: {x: x+width * 4, y: top + width * 4}, p2: {x: x, y: top + width * 8}, solid: false});
+
+    const ab = setAABB(id, 8)
+
+    scnObj.push({id: id, length: 8, circID: boundaryCircles.length-1, circLen: 1, type: flower, min: ab.min, max: ab.max});
+
+}
+
+//id is the array ID from 1st boundary + number of boundaries in obj
+function paintFlower(id, len){
+    bgctx.fillStyle = "#C0C0C0";
+    bgctx.strokeStyle = "#707070";
+    bgctx.lineWidth = 3;
+
+    bgctx.beginPath();
+    bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
+    bgctx.lineTo(boundaryColliders[id].p2.x, boundaryColliders[id].p2.y);
+    for(let i = id+1; i < id + len; i++){
+        const obj = boundaryColliders[i]
+        bgctx.lineTo(obj.p1.x, obj.p1.y);
+        bgctx.lineTo(obj.p2.x, obj.p2.y);
+    }
+    bgctx.fill();
+    bgctx.stroke();
+    bgctx.strokeStyle = "#000000";
+    bgctx.fillStyle = "#000000";
+}
+
 
 //lets draw a stop sign
 //     ___  
@@ -2127,7 +2210,9 @@ function paintTree(id, len){
     
         for(let i = cid; i < cid + clen; i++){
             const obj = boundaryCircles[i];
-            bgctx.fillCircle(obj.x, obj.y, obj.r)
+            bgctx.beginPath();
+            bgctx.arc(obj.x, obj.y, obj.r,0,2*Math.PI);
+            bgctx.fill();
             
         }
         
@@ -2252,6 +2337,7 @@ function paintTree(id, len){
         bgctx.moveTo(width, top)
         bgctx.quadraticCurveTo(middle, bottom, middle, bottom)
         bgctx.stroke();
+        bgctx.closePath();
 
         bgctx.fillStyle = "#000000";
         bgctx.strokeStyle = "#000000";
@@ -2369,7 +2455,7 @@ function footStepLand(i){
     const type = "sine";
     const freq = 455 + (i * 14.8);
 
-    attack(type, freq, 0.015, 0.01, 0.0, 0.02, 0.2);
+    attack(type, freq, 0.015, 0.01, 0.0, 0.02, 0.1);
     
       
 }
@@ -2550,7 +2636,7 @@ function spideyMove(leg) {
                     //legMods[leg].anim = none;
                     legMods[leg].x = legMods[leg].jx;
                     legMods[leg].y = legMods[leg].jy;
-                    if(dist > spideyRadius){
+                    if(dist > spideyRadius*0.5 && dist < spideyRadius * 0.66){
                         legMods[leg].dx = (spideyJump[leg].x )*0.2;
                         legMods[leg].dy = (-5 * spiScl) + (spideyJump[leg].y - spideyLegs[leg].y)*0.66;
                     }
@@ -3372,14 +3458,14 @@ function drawSpidey(x, y) {
                 if (legMods[i].anim === throwStrike){
                     stopWeb();
                     legMods[i].anim = falling ? none : walking;   
-                    footStep(i, 0.5)
+                    footStep(i, 0.25)
                     legMods[i].dx = 0;
                     legMods[i].dy = 0;
                 }
                 if (legMods[i].anim === throwWeb){
                     launchWeb(i);
                     legMods[i].anim = falling ? none : walking;   
-                    footStep(i, 0.5)
+                    footStep(i, 0.25)
                     legMods[i].dx = 0;
                     legMods[i].dy = 0;
                 } else if(legMods[i].anim === readyWeb) {
@@ -4638,8 +4724,8 @@ function move() {
             // legMods[i].jy -= ymov;
         } 
         else if (legMods[i].anim === walking) {
-            legMods[i].x -= xmov * 0.5;
-            legMods[i].y -= ymov * 0.5;
+            legMods[i].x -= xmov *0.5;
+            legMods[i].y -= ymov *0.5;
             if(legMods[i].start === lastTimestamp){
                 legMods[i].dx += xmov;
                 legMods[i].dy += ymov;
@@ -4702,38 +4788,49 @@ function drawEnemies(){
         
     })
 }
-
+const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(){
-    //if(!jactive) {
-    scnObj.forEach((x) => {
-        if(x.type === ground){
-                //          
-                paintGround(x.id, x.length);  
+    const overdraw = bgOverflow/worldScale;
+    const overX = spideyPos.x - bgOffset.x
+    const overY = spideyPos.y - bgOffset.y
+    if(
+        (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
+    ) {
+        console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+        bgOffset.x = spideyPos.x;
+        bgOffset.y = spideyPos.y;
+        scnObj.forEach((x) => {
+            if(x.type === ground){
+                    //          
+                    paintGround(x.id, x.length);  
+                }
+            if(
+                x.max.x > spideyPos.x - viewport.width - overdraw
+                && x.min.x < spideyPos.x + viewport.width + overdraw
+                && x.max.y > spideyPos.y - viewport.height - overdraw
+                && x.min.y < spideyPos.y + viewport.height + overdraw){
+                //animate
+                switch (x.type){
+                    case rockMed:
+                        paintRockMed(x.id, x.length); 
+                        break
+                    case stopSign:
+                        paintStopSign(x.id, x.length);  
+                        break
+                    case tree:
+                        paintTree(x.id, x.length, x.circID, x.circLen);  
+                        break
+                    case cactus:
+                        paintCactus(x.id, x.length, x.circID, x.circLen);  
+                        break
+                    case flower:
+                        paintFlower(x.id, x.length, x.circID, x.circLen);  
+                        break
+                }
             }
-        if(
-            x.max.x > spideyPos.x - viewport.width
-            && x.min.x < spideyPos.x + viewport.width
-            && x.max.y > spideyPos.y - viewport.height
-            && x.min.y < spideyPos.y + viewport.height){
-            //animate
-            switch (x.type){
-                case rockMed:
-                    paintRockMed(x.id, x.length); 
-                    break
-                case stopSign:
-                    paintStopSign(x.id, x.length);  
-                    break
-                case tree:
-                    paintTree(x.id, x.length, x.circID, x.circLen);  
-                    break
-                case cactus:
-                    paintCactus(x.id, x.length, x.circID, x.circLen);  
-                    break
-            }
-        }
-    })
-    //}
+        })
+    }
 }
 
 function processAI(){
@@ -5128,25 +5225,32 @@ function update(timestamp) {
 
 
         const w = viewport.width;
-        const h = viewport.height;
-        const overdrawX = background.width;
-        const overdrawY = background.height; 
-        const bgw = background.width / worldScale;
-        const bgh = background.height / worldScale;
+        const h = viewport.height; 
+        const bgw = canvas.width / worldScale;
+        const bgh = canvas.height / worldScale;
 
         const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
         const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
+        const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
+        const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+        
         bgctx.save();
-        bgctx.translate(
-            -bgXoffset,
-            -bgYoffset 
-            );
-        //console.log(spideyPos, worldSize)
+        bgctx.translate(-bgXoffset+bgOverflow/worldScale, -bgYoffset+bgOverflow/worldScale);
+        
+        //confine clip region to overdraw area (offscreen)
+        // const startX = overdrawX >= 0 ? bgXoffset : bgXoffset + bgctx.width*0.5;
+        // const startY = overdrawY >= 0 ? bgYoffset : bgYoffset + bgctx.height*0.5;
+        // bgctx.beginPath();
+        // bgctx.rect(startX, startY, overdrawX, bgctx.height);
+        // bgctx.rect(startX, startY, bgctx.width, overdrawY);
+        // bgctx.clip();
+
         drawObjects();
         bgctx.restore();
         //source, sourceXY, WH, destXY, dWH
         //context.drawImage(background, 0, 0, overdrawX * worldScale, overdrawY * worldScale, 0, 0, overdrawX, overdrawY)
-        context.drawImage(background, 0, 0,
+
+        context.drawImage(background, (overdrawX * worldScale)+bgOverflow, (overdrawY * worldScale)+bgOverflow,
             w * worldScale, h * worldScale, 0, 0,
             w, h)
 
@@ -5156,11 +5260,6 @@ function update(timestamp) {
             -bgYoffset
             );
             //context.scale(worldScale, worldScale);
-            drawProjectiles();
-            drawWebs();
-            drawCursor();
-            drawSpidey(spideyPos.x, spideyPos.y);
-            drawEnemies();
             //player movement
             processInput();
             move();
@@ -5168,6 +5267,11 @@ function update(timestamp) {
             gravity();
             
             processAI();
+            drawProjectiles();
+            drawWebs();
+            drawCursor();
+            drawSpidey(spideyPos.x, spideyPos.y);
+            drawEnemies();
         context.restore();
 
         vctx.drawImage(canvas, 0, 0,
