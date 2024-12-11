@@ -18,7 +18,7 @@ const context = canvas.getContext("2d", { alpha: false });
 const vctx = viewport.getContext("2d", { alpha: false });
 const uictx = UI.getContext("2d", { alpha: true });
 
-const bgctx = offscreen.getContext("2d", { alpha: true });
+const bgctx = offscreen.getContext("2d", { alpha: false });
 
 
 console.log(viewport.clientHeight, viewport.clientWidth)
@@ -27,10 +27,10 @@ console.log(window.innerHeight, window.innerWidth)
 
 //15360
 let worldSize = {width: 15360, height: 6666};
-const bgOverflow = 150;
+//const bgOverflow = 150;
 
-offscreen.width = window.innerWidth + bgOverflow*2;
-offscreen.height = window.innerHeight + bgOverflow*2;
+offscreen.width = window.innerWidth// + bgOverflow*2;
+offscreen.height = window.innerHeight// + bgOverflow*2;
 bgctx.width = window.innerWidth;
 bgctx.height = window.innerHeight;
 canvas.width = window.innerWidth;
@@ -64,8 +64,8 @@ function setDim() {
     bgctx.width = window.innerWidth;
     bgctx.height = window.innerHeight;
     
-    offscreen.width = window.innerWidth + bgOverflow*2;
-    offscreen.height = window.innerHeight + bgOverflow*2;
+    offscreen.width = window.innerWidth// + bgOverflow*2;
+    offscreen.height = window.innerHeight// + bgOverflow*2;
 
     if(startgame) {
         // original values
@@ -1357,7 +1357,7 @@ const rockMed = 1;
 const stopSign = 2;
 const cactus = 3;
 const tree = 4;
-const flower = 4;
+const flower = 5;
 
 
 //boundaries
@@ -1416,11 +1416,11 @@ for(let i=333;i<worldSize.width+333;i+=300){
             //drawRockMed(i, ground, scale);
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
-        // } else if (type < 0.75) {
-        //     i+=40;
-        //     drawFlower(i, ground, scale);
+        } else if (type < 0.75) {
+            i+=40;
+            drawFlower(i, ground, scale);
             //drawCactus(i, ground + 150 * Math.random(), 1);
-            // i+=40;
+            i+=40;
         } else if (type < 0.95) {
             i+=300;
             drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(8 * Math.random())), 40*Math.random()-20);
@@ -1684,56 +1684,84 @@ function drawFlower(x,y,s,r){
     let height = r? Math.abs(100 * s) : 100 * s;
     
     const width = 8 * s;
-    const top = y - height;
+    const top = y - height *s;
     const leftSide = x - width;
     const rightSide = x + width;
 
     const id = boundaryColliders.length;
+    const cid = boundaryCircles.length;
     
     //stalk
-    boundaryColliders.push({p1: {x: rightSide, y: y}, p2: {x: rightSide, y: top}, solid: false});
     boundaryColliders.push({p1: {x: leftSide, y: y}, p2: {x: leftSide, y: top}, solid: false});
+    boundaryColliders.push({p1: {x: rightSide, y: y}, p2: {x: rightSide, y: top}, solid: false});
 
-    //leafL
-    areaCircles.push({x: leftSide, y: top - height * 0.37, r: width * 5, half: false, solid: true});
-    boundaryCircles.push({x: leftSide, y: top - height * 0.37, r: width * 5, half: false, solid: false});
-
-    //leafR
-    areaCircles.push({x: rightSide, y: top - height * 0.77, r: width * 4, half: false, solid: true});
-    boundaryCircles.push({x: rightSide, y: top - height * 0.77, r: width * 4, half: false, solid: false});
 
     //bloom
     //circle at top, 2 vert lines on side, line towards top, a middle peak
-    areaCircles.push({x: x, y: top, r: width * 8, half: false, solid: false});
-    boundaryCircles.push({x: x, y: top, r: width * 8, half: false, solid: false});
+    areaCircles.push({x: x, y: top, r: width * 4, half: false, solid: false});
+    boundaryCircles.push({x: x, y: top, r: width * 4, half: false, solid: false});
 
-    boundaryColliders.push({p1: {x: x-width * 4, y: top + width * 4}, p2: {x: x-width * 4, y: top + width * 8}, solid: false});
-    boundaryColliders.push({p1: {x: x+width * 4, y: top + width * 4}, p2: {x: x+width * 4, y: top + width * 8}, solid: false});
+    boundaryColliders.push({p1: {x: x-width * 4, y: top}, p2: {x: x-width * 4, y: top - width * 8}, solid: false});
+    boundaryColliders.push({p1: {x: x-width * 4, y: top - width * 8}, p2: {x: x - width*2, y: top - width * 6}, solid: false});
+    //middle
+    boundaryColliders.push({p1: {x: x - width*2, y: top - width * 6}, p2: {x: x, y: top - width * 8}, solid: false});
+    boundaryColliders.push({p1:{x: x, y: top - width * 8} , p2: {x: x+width * 2, y: top - width * 6}, solid: false});
 
-    boundaryColliders.push({p1: {x: x-width * 4, y: top + width * 8}, p2: {x: x, y: top}, solid: false});
-    boundaryColliders.push({p1: {x: x+width * 4, y: top + width * 8}, p2: {x: x, y: top}, solid: false});
+    boundaryColliders.push({p1: {x: x+width * 2, y: top - width * 6}, p2: {x: x+width * 4, y: top - width * 8}, solid: false});
+    boundaryColliders.push({p1: {x: x+width * 4, y: top - width * 8}, p2: {x: x+width * 4, y: top}, solid: false});
 
-    boundaryColliders.push({p1: {x: x-width * 4, y: top + width * 4}, p2: {x: x, y: top + width * 8}, solid: false});
-    boundaryColliders.push({p1: {x: x+width * 4, y: top + width * 4}, p2: {x: x, y: top + width * 8}, solid: false});
 
+    //leafL
+    areaCircles.push({x: leftSide-width, y: top + height * 0.37, r: width, half: false, solid: true});
+    boundaryCircles.push({x: leftSide-width, y: top + height * 0.37, r: width, half: false, solid: false});
+
+    //leafR
+    areaCircles.push({x: rightSide+width, y: top + height * 0.77, r: width, half: false, solid: true});
+    boundaryCircles.push({x: rightSide+width, y: top + height * 0.77, r: width, half: false, solid: false});
     const ab = setAABB(id, 8)
 
-    scnObj.push({id: id, length: 8, circID: boundaryCircles.length-1, circLen: 1, type: flower, min: ab.min, max: ab.max});
+    scnObj.push({id: id, length: 8, circID: cid, circLen: 3, type: flower, min: ab.min, max: ab.max});
 
 }
 
 //id is the array ID from 1st boundary + number of boundaries in obj
-function paintFlower(id, len){
-    bgctx.fillStyle = "#C0C0C0";
-    bgctx.strokeStyle = "#707070";
+function paintFlower(id, len, cid, clen){
+    bgctx.fillStyle = "#18BC12";
+    bgctx.strokeStyle = "#077105";
     bgctx.lineWidth = 3;
 
     bgctx.beginPath();
     bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
     bgctx.lineTo(boundaryColliders[id].p2.x, boundaryColliders[id].p2.y);
-    for(let i = id+1; i < id + len; i++){
+    bgctx.lineTo(boundaryColliders[id+1].p2.x, boundaryColliders[id+1].p2.y);
+    bgctx.lineTo(boundaryColliders[id+1].p1.x, boundaryColliders[id+1].p1.y);
+    bgctx.fill();
+    bgctx.stroke();
+
+    bgctx.lineWidth = 1.5;
+    bgctx.beginPath();
+    bgctx.ellipse(boundaryCircles[cid+1].x, boundaryCircles[cid+1].y, boundaryCircles[cid+1].r, boundaryCircles[cid+1].r*0.5,0, 0, 2*Math.PI)
+    //bgctx.arc(boundaryCircles[cid+1].x, boundaryCircles[cid+1].y, boundaryCircles[cid+1].r, 0, 2*Math.PI);
+    bgctx.fill();
+    bgctx.stroke();
+    bgctx.beginPath();
+    bgctx.ellipse(boundaryCircles[cid+2].x, boundaryCircles[cid+2].y, boundaryCircles[cid+2].r, boundaryCircles[cid+2].r*0.7,0, 0, 2*Math.PI)
+    //bgctx.arc(boundaryCircles[cid+2].x, boundaryCircles[cid+2].y, boundaryCircles[cid+2].r, 0, 2*Math.PI);
+    bgctx.fill();
+    bgctx.stroke();
+
+    
+    
+    bgctx.fillStyle = "#C90000";
+    bgctx.strokeStyle = "#8F0000";
+    bgctx.lineWidth = 3;
+    bgctx.beginPath();
+    bgctx.arc(boundaryCircles[cid].x, boundaryCircles[cid].y, boundaryCircles[cid].r, Math.PI, 2*Math.PI, true);
+
+    bgctx.moveTo(boundaryColliders[id+2].p1.x, boundaryColliders[id+2].p1.y);
+    for(let i = id+2; i < id + len; i++){
         const obj = boundaryColliders[i]
-        bgctx.lineTo(obj.p1.x, obj.p1.y);
+        //bgctx.lineTo(obj.p1.x, obj.p1.y);
         bgctx.lineTo(obj.p2.x, obj.p2.y);
     }
     bgctx.fill();
@@ -4791,25 +4819,26 @@ function drawEnemies(){
 const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(){
-    const overdraw = bgOverflow/worldScale;
-    const overX = spideyPos.x - bgOffset.x
-    const overY = spideyPos.y - bgOffset.y
-    if(
-        (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
-    ) {
-        console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-        bgOffset.x = spideyPos.x;
-        bgOffset.y = spideyPos.y;
+    // const overdraw = bgOverflow/worldScale;
+    // const overX = spideyPos.x - bgOffset.x
+    // const overY = spideyPos.y - bgOffset.y
+    // if(
+    //     (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
+    // ) {
+    //     console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+    //     bgOffset.x = spideyPos.x;
+    //     bgOffset.y = spideyPos.y;
         scnObj.forEach((x) => {
             if(x.type === ground){
                     //          
                     paintGround(x.id, x.length);  
                 }
             if(
-                x.max.x > spideyPos.x - viewport.width - overdraw
-                && x.min.x < spideyPos.x + viewport.width + overdraw
-                && x.max.y > spideyPos.y - viewport.height - overdraw
-                && x.min.y < spideyPos.y + viewport.height + overdraw){
+                x.max.x > spideyPos.x - viewport.width// - overdraw
+                && x.min.x < spideyPos.x + viewport.width// + overdraw
+                && x.max.y > spideyPos.y - viewport.height// - overdraw
+                && x.min.y < spideyPos.y + viewport.height// + overdraw
+            ){
                 //animate
                 switch (x.type){
                     case rockMed:
@@ -4830,7 +4859,7 @@ function drawObjects(){
                 }
             }
         })
-    }
+    //}
 }
 
 function processAI(){
@@ -4948,6 +4977,8 @@ let curYPos = 0;
 let dashCoolDown = -9990;
 
 let startgame = true;
+// initScene();
+// addBoundaries();
 let firstclick = 0;
 spideyPos = {x: 200, y: worldSize.height - 200}
 let startButton, optionsButton, quitButton; 
@@ -4975,7 +5006,7 @@ function firstFrame(timestamp) {
 
 //main game draw
 function update(timestamp) {
-    requestAnimationFrame(update);
+    drawFrame(update);
     deltaTime = (deltaTime + ((timestamp - lastTimestamp) / perfectFrameTime)) / 2;
     prevTimestamp = lastTimestamp;
     lastTimestamp = timestamp;
@@ -5231,11 +5262,11 @@ function update(timestamp) {
 
         const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
         const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
-        const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
-        const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
-        
+        // const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
+        // const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+
         bgctx.save();
-        bgctx.translate(-bgXoffset+bgOverflow/worldScale, -bgYoffset+bgOverflow/worldScale);
+        bgctx.translate(-bgXoffset, -bgYoffset);
         
         //confine clip region to overdraw area (offscreen)
         // const startX = overdrawX >= 0 ? bgXoffset : bgXoffset + bgctx.width*0.5;
@@ -5250,7 +5281,7 @@ function update(timestamp) {
         //source, sourceXY, WH, destXY, dWH
         //context.drawImage(background, 0, 0, overdrawX * worldScale, overdrawY * worldScale, 0, 0, overdrawX, overdrawY)
 
-        context.drawImage(background, (overdrawX * worldScale)+bgOverflow, (overdrawY * worldScale)+bgOverflow,
+        context.drawImage(offscreen, 0, 0,
             w * worldScale, h * worldScale, 0, 0,
             w, h)
 
