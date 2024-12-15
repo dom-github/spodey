@@ -4,8 +4,9 @@ const canvas = document.getElementById("worldCanvas");
 const UI = document.getElementById("UI");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
-const offscreen = background.transferControlToOffscreen();
+const woffscreen = background.transferControlToOffscreen();
 
+const offscreen = new OffscreenCanvas(256,256)
 
 //viewport.id = "viewport";
 UI.width = window.innerWidth;
@@ -14,8 +15,8 @@ viewport.width = window.innerWidth;
 viewport.height = window.innerHeight;
 
 
-const context = canvas.getContext("2d", { alpha: false });
-const vctx = viewport.getContext("2d", { alpha: false });
+const context = canvas.getContext("2d", { alpha: true });
+const vctx = viewport.getContext("2d", { alpha: true });
 const uictx = UI.getContext("2d", { alpha: true });
 
 const bgctx = offscreen.getContext("2d", { alpha: false });
@@ -463,8 +464,8 @@ let OlegOrigins = [
 
 function scaleWorld(news){
     //temp: redraw background hack
-    bgOffset.x = -9999;
-    bgOffset.y = -9999;
+    // bgOffset.x = -9999;
+    // bgOffset.y = -9999;
         context.scale(1/worldScale, 1/worldScale);
         bgctx.scale(1/worldScale, 1/worldScale);
         worldScale = Math.max(1, Math.min(8,news));
@@ -616,23 +617,7 @@ function mousedown(e){
             const clickID = checkCollision(mousePosition.x, mousePosition.y, 5)
             const tapID = checkCollision(e.clientX, e.clientY, 5)
             if(clickID === startButton || tapID === startButton){
-                console.log("Start!")
-                scaleSpidey(50);
-                scaleWorld(2);
-                startgame = false;
-                skipMouseInput = true;
-                initScene();
-                addBoundaries();
-                //uictx.clearRect(0,0,UI.width,UI.height);
-                // UI.width = 0;
-                // UI.height = 0;
-                UI.width = viewport.width;
-                UI.height = viewport.height;
-                if(isUsingTouch) {
-                    initMobileUI();
-                    drawMobileUI();
-                }
-                spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
+                newGame();
             } else if(clickID ===  optionsButton){
                         console.log("Options!")
             }else if(clickID ===  quitButton){
@@ -1416,11 +1401,11 @@ for(let i=333;i<worldSize.width+333;i+=300){
             //drawRockMed(i, ground, scale);
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
-        } else if (type < 0.75) {
-            i+=40;
-            drawFlower(i, ground, scale);
-            //drawCactus(i, ground + 150 * Math.random(), 1);
-            i+=40;
+        // } else if (type < 0.75) {
+        //     i+=40;
+        //     drawFlower(i, ground, scale);
+        //     //drawCactus(i, ground + 150 * Math.random(), 1);
+        //     i+=40;
         } else if (type < 0.95) {
             i+=300;
             drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(8 * Math.random())), 40*Math.random()-20);
@@ -3420,7 +3405,7 @@ function drawSpidey(x, y) {
             
             //abs (0.5 - sec) = 0.5...0...-0.5
             
-            ay = -(spideyRadius * 2 * ((yrotation / 2) / (spideyRadius / 3))) * (0.5 - Math.abs(0.5 - step));
+            ay = -(spideyRadius * 3 * ((yrotation / 2) / (spideyRadius / 3))) * (0.5 - Math.abs(0.5 - step));
             //console.log("leg:", i, ay);
             
             //current position in anim frame
@@ -4816,9 +4801,31 @@ function drawEnemies(){
         
     })
 }
-const bgOffset = {x: 0, y: 0}
+
+
+const objworker = window.Worker ? new Worker("worker_objs.js") : undefined;
+//const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
-function drawObjects(){
+function drawObjects(bgXoffset, bgYoffset){
+    if (window.Worker) {
+        
+        objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width, spideyPos.x + viewport.width, spideyPos.y - viewport.height, spideyPos.y + viewport.height]);
+      } else {
+        
+        // const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
+        // const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+
+        bgctx.save();
+        bgctx.translate(-bgXoffset, -bgYoffset);
+        
+        //confine clip region to overdraw area (offscreen)
+        // const startX = overdrawX >= 0 ? bgXoffset : bgXoffset + bgctx.width*0.5;
+        // const startY = overdrawY >= 0 ? bgYoffset : bgYoffset + bgctx.height*0.5;
+        // bgctx.beginPath();
+        // bgctx.rect(startX, startY, overdrawX, bgctx.height);
+        // bgctx.rect(startX, startY, bgctx.width, overdrawY);
+        // bgctx.clip();
+
     // const overdraw = bgOverflow/worldScale;
     // const overX = spideyPos.x - bgOffset.x
     // const overY = spideyPos.y - bgOffset.y
@@ -4859,7 +4866,10 @@ function drawObjects(){
                 }
             }
         })
+        
+        bgctx.restore();
     //}
+    }
 }
 
 function processAI(){
@@ -5262,28 +5272,14 @@ function update(timestamp) {
 
         const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
         const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
-        // const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
-        // const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
-
-        bgctx.save();
-        bgctx.translate(-bgXoffset, -bgYoffset);
-        
-        //confine clip region to overdraw area (offscreen)
-        // const startX = overdrawX >= 0 ? bgXoffset : bgXoffset + bgctx.width*0.5;
-        // const startY = overdrawY >= 0 ? bgYoffset : bgYoffset + bgctx.height*0.5;
-        // bgctx.beginPath();
-        // bgctx.rect(startX, startY, overdrawX, bgctx.height);
-        // bgctx.rect(startX, startY, bgctx.width, overdrawY);
-        // bgctx.clip();
-
-        drawObjects();
-        bgctx.restore();
+        drawObjects(bgXoffset, bgYoffset);
         //source, sourceXY, WH, destXY, dWH
         //context.drawImage(background, 0, 0, overdrawX * worldScale, overdrawY * worldScale, 0, 0, overdrawX, overdrawY)
-
-        context.drawImage(offscreen, 0, 0,
-            w * worldScale, h * worldScale, 0, 0,
-            w, h)
+        context.clearRect(0,0,viewport.width,viewport.height);
+        vctx.clearRect(0,0,viewport.width,viewport.height);
+        // context.drawImage(woffscreen, 0, 0,
+        //     w * worldScale, h * worldScale, 0, 0,
+        //     w, h)
 
         context.save();
         context.translate(
@@ -5355,18 +5351,18 @@ function update(timestamp) {
 function noinput (){ return !upPressed && !downPressed && !rightPressed && !leftPressed && !shiftPressed && !spacePressed};
 function processInput () {
     if(upPressed && !downPressed && (!falling || falling && layWeb && shiftPressed)) {
-        setSpeed(0, -upPressed * Math.min(1, spiScl));
+        setSpeed(0, -upPressed * Math.min(0.75, spiScl));
         
     }
     if(downPressed && !upPressed) {
-        setSpeed(0, downPressed * spiScl);
+        setSpeed(0, 0.75 * downPressed * spiScl);
     }
 
     if(rightPressed && !leftPressed) {
-        setSpeed(rightPressed * spiScl, 0);
+        setSpeed(0.75 * rightPressed * spiScl, 0);
     }
     if(leftPressed && !rightPressed) {
-        setSpeed(-leftPressed * spiScl, 0);
+        setSpeed(-0.75 * leftPressed * spiScl, 0);
     }
 
 
@@ -5623,7 +5619,32 @@ function wheelHandler(e) {
 // )
 }
 
+function newGame(){
+    console.log("Start!")
+    scaleSpidey(50);
+    scaleWorld(2);
+    startgame = false;
+    skipMouseInput = true;
+    initScene();
+    addBoundaries();
+    //uictx.clearRect(0,0,UI.width,UI.height);
+    // UI.width = 0;
+    // UI.height = 0;
+    UI.width = viewport.width;
+    UI.height = viewport.height;
+    if(isUsingTouch) {
+        initMobileUI();
+        drawMobileUI();
+    }
+    spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
 
+    
+    objworker.postMessage({canvas: woffscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [woffscreen]);
+    objworker.onmessage = function(event){
+        //document.getElementById("result").innerHTML = event.data;
+        console.log(event.data)
+    };
+}
 
 function initScene(){
     layWeb = false;
