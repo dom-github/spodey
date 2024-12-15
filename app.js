@@ -4803,7 +4803,7 @@ function drawEnemies(){
 }
 
 
-const objworker = window.Worker ? new Worker("worker_objs.js") : undefined;
+const objworker = window.Worker ? new Worker("./worker_objs.js") : undefined;
 //const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
