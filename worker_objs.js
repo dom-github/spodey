@@ -208,7 +208,7 @@ onmessage = function(event){
         const min = {x: 0, y: 0}
         const max = {x: 0, y: 0}
         //get the bounding box values
-        for(i=0; i<len; i++){
+        for(let i=0; i<len; i++){
             const col = boundaryColliders[id+i]
             min.x = Math.min(min.x, Math.min(col.p1.x, col.p2.x))
             min.y = Math.min(min.y, Math.min(col.p1.y, col.p2.y))

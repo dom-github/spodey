@@ -1569,7 +1569,7 @@ function setAABB(id, len){
     const min = {x: 0, y: 0}
     const max = {x: 0, y: 0}
     //get the bounding box values
-    for(i=0; i<len; i++){
+    for(let i=0; i<len; i++){
         const col = boundaryColliders[id+i]
         min.x = Math.min(min.x, Math.min(col.p1.x, col.p2.x))
         min.y = Math.min(min.y, Math.min(col.p1.y, col.p2.y))
@@ -2910,7 +2910,7 @@ function drawLadybug(bug) {
     //     x-33, y+24,
     // );
     // //forelegs
-    // for(i=0;i<2;i++){    
+    // for(let i=0;i<2;i++){    
     //     context.stroke();
     //     context.fillStyle = "#111111";
     //     context.lineWidth = 1.5;
@@ -4803,7 +4803,7 @@ function drawEnemies(){
 }
 
 
-const objworker = window.Worker ? new Worker("./worker_objs.js") : undefined;
+const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 //const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
@@ -5174,7 +5174,7 @@ function update(timestamp) {
                     })
                 })
             } else if ((step - viewport.height) > 800 && (enemies.length === 0 || enemies.every((x)=>{return !x.active}))){
-                for(i=0;i<=fliesEaten;i++){
+                for(let i=0;i<=fliesEaten;i++){
                     enemies.push({type: 0, x: viewport.width + 40*Math.random(), y: (250 + 35*i)%viewport.height, start: 1000 *  Math.random(), dx: viewport.width * Math.random(), dy: viewport.height * Math.random(), active: true, anim: flying})
                 }
                 
@@ -5823,7 +5823,7 @@ function drawMobileUI() {
     uictx.fillCirclePath(UIButtons[1].avg.x, UIButtons[1].avg.y, 10 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
-    for(i=0;i<spideyLegs.length;i++){
+    for(let i=0;i<spideyLegs.length;i++){
         const xanchor = UIButtons[1].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[1].avg.y - spideyLegs[i].y * (size/100)
@@ -5844,7 +5844,7 @@ function drawMobileUI() {
     uictx.fillCirclePath(UIButtons[4].avg.x, UIButtons[4].avg.y, 10 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
-    for(i=0;i<spideyLegs.length;i++){
+    for(let i=0;i<spideyLegs.length;i++){
         const xanchor = UIButtons[4].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[4].avg.y - spideyLegs[i].y * (size/100)
@@ -5870,7 +5870,7 @@ function drawMobileUI() {
     uictx.beginPath();
     uictx.moveTo(UIButtons[2].p1.x,UIButtons[2].p1.y);
     uictx.lineTo(UIButtons[2].avg.x,UIButtons[2].avg.y);
-    for(i=0;i<spideyLegs.length;i++){
+    for(let i=0;i<spideyLegs.length;i++){
         const xanchor = UIButtons[2].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[2].avg.y - spideyLegs[i].y * (size/100)
@@ -5893,7 +5893,7 @@ function drawMobileUI() {
     uictx.beginPath();
     uictx.moveTo(UIButtons[5].p1.x,UIButtons[5].p1.y);
     uictx.lineTo(UIButtons[5].avg.x,UIButtons[5].avg.y);
-    for(i=0;i<spideyLegs.length;i++){
+    for(let i=0;i<spideyLegs.length;i++){
         const xanchor = UIButtons[5].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[5].avg.y - spideyLegs[i].y * (size/100)
