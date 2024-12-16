@@ -4,9 +4,8 @@ const canvas = document.getElementById("worldCanvas");
 const UI = document.getElementById("UI");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
-const woffscreen = background.transferControlToOffscreen();
+const offscreen = background.transferControlToOffscreen();
 
-const offscreen = new OffscreenCanvas(256,256)
 
 //viewport.id = "viewport";
 UI.width = window.innerWidth;
@@ -19,7 +18,9 @@ const context = canvas.getContext("2d", { alpha: true });
 const vctx = viewport.getContext("2d", { alpha: true });
 const uictx = UI.getContext("2d", { alpha: true });
 
-const bgctx = offscreen.getContext("2d", { alpha: false });
+//temp: dummy canvas for single-thread fallback
+const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
+const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offscreen.getContext("2d", { alpha: false });
 
 
 console.log(viewport.clientHeight, viewport.clientWidth)
@@ -28,12 +29,14 @@ console.log(window.innerHeight, window.innerWidth)
 
 //15360
 let worldSize = {width: 15360, height: 6666};
-//const bgOverflow = 150;
+const bgOverflow = 300;
 
-offscreen.width = window.innerWidth// + bgOverflow*2;
-offscreen.height = window.innerHeight// + bgOverflow*2;
-bgctx.width = window.innerWidth;
-bgctx.height = window.innerHeight;
+    offscreen.width = window.innerWidth + bgOverflow*2;
+    offscreen.height = window.innerHeight + bgOverflow*2;
+if(!window.Worker){
+    bgctx.width = window.innerWidth;
+    bgctx.height = window.innerHeight;
+}
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 // canvas.width = worldSize.width;
@@ -62,11 +65,13 @@ function setDim() {
     uictx.height = window.innerHeight;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    bgctx.width = window.innerWidth;
-    bgctx.height = window.innerHeight;
+    if(!window.Worker){
+        bgctx.width = window.innerWidth;
+        bgctx.height = window.innerHeight;
+        offscreen.width = window.innerWidth + bgOverflow*2;
+        offscreen.height = window.innerHeight + bgOverflow*2;
+    }
     
-    offscreen.width = window.innerWidth// + bgOverflow*2;
-    offscreen.height = window.innerHeight// + bgOverflow*2;
 
     if(startgame) {
         // original values
@@ -124,7 +129,9 @@ function setDim() {
     // viewport.height = Math.max(300,viewport.height);    
 }
 context.scale(worldScale, worldScale)
-bgctx.scale(worldScale, worldScale)
+if(!window.Worker){
+    bgctx.scale(worldScale, worldScale)
+}
 //vctx.scale(0.5, 1)
 
 const framerate = 60;
@@ -467,10 +474,12 @@ function scaleWorld(news){
     // bgOffset.x = -9999;
     // bgOffset.y = -9999;
         context.scale(1/worldScale, 1/worldScale);
-        bgctx.scale(1/worldScale, 1/worldScale);
+        if(!window.Worker){
+            bgctx.scale(1/worldScale, 1/worldScale);
+            bgctx.scale(news, news);
+        }
         worldScale = Math.max(1, Math.min(8,news));
         context.scale(worldScale, worldScale);
-        bgctx.scale(worldScale, worldScale);
         console.log(worldScale);
 
 }
@@ -3392,7 +3401,7 @@ function drawSpidey(x, y) {
         }
         if (legMods[i].anim === walking) {
             //250ms default step ... 1/4 spidey radius 
-            const stepSpeed = Math.min(133, 50*spiScl) + 216 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*2//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
+            const stepSpeed = Math.min(133, 50*spiScl) + 256 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*2//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
             const sec = Math.min(elapsed/stepSpeed, 1);  
             //console.log(Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2))
 
@@ -4804,13 +4813,23 @@ function drawEnemies(){
 
 
 const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-//const bgOffset = {x: 0, y: 0}
+const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
     if (window.Worker) {
-        
+
+    const overdraw = bgOverflow/worldScale;
+    const overX = spideyPos.x - bgOffset.x
+    const overY = spideyPos.y - bgOffset.y
+    if(
+        (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
+    ) {
+        console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+        bgOffset.x = spideyPos.x;
+        bgOffset.y = spideyPos.y;
         objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width, spideyPos.x + viewport.width, spideyPos.y - viewport.height, spideyPos.y + viewport.height]);
-      } else {
+    }
+        } else {
         
         // const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
         // const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
@@ -5265,6 +5284,11 @@ function update(timestamp) {
     if (!startgame){
 
 
+            //player movement
+            processInput();
+            move();
+            //gravity + forces
+            gravity();
         const w = viewport.width;
         const h = viewport.height; 
         const bgw = canvas.width / worldScale;
@@ -5272,12 +5296,17 @@ function update(timestamp) {
 
         const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
         const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
-        drawObjects(bgXoffset, bgYoffset);
-        //source, sourceXY, WH, destXY, dWH
-        //context.drawImage(background, 0, 0, overdrawX * worldScale, overdrawY * worldScale, 0, 0, overdrawX, overdrawY)
+        
+        const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
+        const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+
         context.clearRect(0,0,viewport.width,viewport.height);
         vctx.clearRect(0,0,viewport.width,viewport.height);
-        // context.drawImage(woffscreen, 0, 0,
+        //source, sourceXY, WH, destXY, dWH
+            context.drawImage(background, (overdrawX * worldScale)+bgOverflow, (overdrawY * worldScale)+bgOverflow,
+            w * worldScale, h * worldScale, 0, 0,
+            w, h)
+        // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
         //     w, h)
 
@@ -5287,11 +5316,6 @@ function update(timestamp) {
             -bgYoffset
             );
             //context.scale(worldScale, worldScale);
-            //player movement
-            processInput();
-            move();
-            //gravity + forces
-            gravity();
             
             processAI();
             drawProjectiles();
@@ -5313,7 +5337,7 @@ function update(timestamp) {
             w, h)
         //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
         
-
+        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
        
         //Leg Hover 
         // let count = 0;
@@ -5639,7 +5663,7 @@ function newGame(){
     spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
 
     
-    objworker.postMessage({canvas: woffscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [woffscreen]);
+    objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
     objworker.onmessage = function(event){
         //document.getElementById("result").innerHTML = event.data;
         console.log(event.data)
