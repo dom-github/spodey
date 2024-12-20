@@ -29,7 +29,7 @@ console.log(window.innerHeight, window.innerWidth)
 
 //15360
 let worldSize = {width: 15360, height: 6666};
-const bgOverflow = 300;
+const bgOverflow = 150;
 
     offscreen.width = window.innerWidth + bgOverflow*2;
     offscreen.height = window.innerHeight + bgOverflow*2;
@@ -129,9 +129,7 @@ function setDim() {
     // viewport.height = Math.max(300,viewport.height);    
 }
 context.scale(worldScale, worldScale)
-if(!window.Worker){
-    bgctx.scale(worldScale, worldScale)
-}
+bgctx.scale(worldScale, worldScale)
 //vctx.scale(0.5, 1)
 
 const framerate = 60;
@@ -3272,7 +3270,13 @@ const rand3 = Math.random();
 let yrotation = 20;
 let xrotation = 0.1;
 
+//testing with lots of entries for avg
+//do fewer Y so flip upside down is 'easier'
 let prevyrot = [yrotation,0,0,0,
+    yrotation,0,0,0,
+    yrotation,0,0,0,
+    yrotation,0,0,0,
+    yrotation,0,0,0,
     yrotation,0,0,0,
     yrotation,0,0,0,
     yrotation,0,0,0,
@@ -3280,6 +3284,14 @@ let prevyrot = [yrotation,0,0,0,
     0,0,0,yrotation
 ];
 let prevxrot = [xrotation,0,0,0,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
+    0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
@@ -3401,7 +3413,7 @@ function drawSpidey(x, y) {
         }
         if (legMods[i].anim === walking) {
             //250ms default step ... 1/4 spidey radius 
-            const stepSpeed = Math.min(133, 50*spiScl) + 256 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*2//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
+            const stepSpeed = Math.min(333, 50*spiScl) + 256 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*10//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
             const sec = Math.min(elapsed/stepSpeed, 1);  
             //console.log(Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2))
 
@@ -4818,7 +4830,7 @@ const bgOffset = {x: 0, y: 0}
 function drawObjects(bgXoffset, bgYoffset){
     if (window.Worker) {
 
-    const overdraw = bgOverflow/worldScale;
+    const overdraw = bgOverflow/worldScale - 33;
     const overX = spideyPos.x - bgOffset.x
     const overY = spideyPos.y - bgOffset.y
     if(
@@ -4827,7 +4839,7 @@ function drawObjects(bgXoffset, bgYoffset){
         console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
         bgOffset.x = spideyPos.x;
         bgOffset.y = spideyPos.y;
-        objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width, spideyPos.x + viewport.width, spideyPos.y - viewport.height, spideyPos.y + viewport.height]);
+        objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width*0.5, spideyPos.x + viewport.width*0.5, spideyPos.y - viewport.height*0.5, spideyPos.y + viewport.height*0.5]);
     }
         } else {
         
@@ -5036,7 +5048,7 @@ function firstFrame(timestamp) {
 //main game draw
 function update(timestamp) {
     drawFrame(update);
-    deltaTime = (deltaTime + ((timestamp - lastTimestamp) / perfectFrameTime)) / 2;
+    deltaTime = Math.min(10,(deltaTime + ((timestamp - lastTimestamp) / perfectFrameTime)) / 2);
     prevTimestamp = lastTimestamp;
     lastTimestamp = timestamp;
     

@@ -28,7 +28,6 @@ onmessage = function(event){
         boundaryCircles = event.data.boundaryCircles;
         boundaryColliders = event.data.boundaryColliders;
         areaBoxes = event.data.areaBoxes;
-
     }
     function render(time) {
         bgctx.scale(1/worldScale, 1/worldScale);
