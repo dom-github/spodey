@@ -30,7 +30,7 @@ const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offs
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
 
-const bgOverflow = 256;
+const bgOverflow = 512;
 //copy
 // const overflowCopy = new OffscreenCanvas(viewport.width, viewport.height)
 //horizontal
@@ -4867,8 +4867,8 @@ function drawEnemies(){
 }
 
 const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+// const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+// const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
@@ -4877,8 +4877,8 @@ function drawObjects(bgXoffset, bgYoffset){
     const overdraw = bgOverflow/worldScale - 33;
     const overX = spideyPos.x - bgOffset.x
     const overY = spideyPos.y - bgOffset.y
-    const w = background.width;
-    const h = background.height;
+    // const w = background.width;
+    // const h = background.height;
     if(
         (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
     ) {
@@ -5381,6 +5381,8 @@ function update(timestamp) {
         
         const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+        
+        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
 
         context.clearRect(0,0,viewport.width,viewport.height);
         vctx.clearRect(0,0,viewport.width,viewport.height);
@@ -5419,8 +5421,6 @@ function update(timestamp) {
             0, 0, 
             w, h)
         //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
-        
-        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
        
         //Leg Hover 
         // let count = 0;
@@ -5728,12 +5728,6 @@ function wheelHandler(e) {
 
 function newGame(){
     console.log("Start!")
-    scaleSpidey(50);
-    //scaleWorld(2);
-    startgame = false;
-    skipMouseInput = true;
-    initScene();
-    addBoundaries();
     //uictx.clearRect(0,0,UI.width,UI.height);
     // UI.width = 0;
     // UI.height = 0;
@@ -5743,13 +5737,19 @@ function newGame(){
         initMobileUI();
         drawMobileUI();
     }
+    scaleSpidey(42);
+    scaleWorld(3);
+    startgame = false;
+    skipMouseInput = true;
+    initScene();
+    addBoundaries();
     spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
 
     
     //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
     objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
-    overflowHWorker.postMessage({canvas: overflowH, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowH]);
-    overflowVWorker.postMessage({canvas: overflowV, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowV]);
+    // overflowHWorker.postMessage({canvas: overflowH, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowH]);
+    // overflowVWorker.postMessage({canvas: overflowV, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowV]);
     // objworker.onmessage = function(event){
     //     //document.getElementById("result").innerHTML = event.data;
     //     console.log(event.data)
