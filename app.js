@@ -1,22 +1,26 @@
 //const e = require("express");
 
-const canvas = document.getElementById("worldCanvas");
-const UI = document.getElementById("UI");
+//const canvas = document.getElementById("worldCanvas");
+//const UI = document.getElementById("UI");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
 const offscreen = background.transferControlToOffscreen();
 
+//const offscreen = new OffscreenCanvas(window.innerWidth, window.innerHeight);
+const canvas = new OffscreenCanvas(window.innerWidth, window.innerHeight);
+const UI = new OffscreenCanvas(window.innerWidth, window.innerHeight);
 
-//viewport.id = "viewport";
-UI.width = window.innerWidth;
-UI.height = window.innerHeight;
+
 viewport.width = window.innerWidth;
 viewport.height = window.innerHeight;
 
 
-const context = canvas.getContext("2d", { alpha: true });
-const vctx = viewport.getContext("2d", { alpha: true });
+const context = canvas.getContext("2d", { alpha: false });
+const vctx = viewport.getContext("2d", { alpha: false });
 const uictx = UI.getContext("2d", { alpha: true });
+
+
+
 
 //temp: dummy canvas for single-thread fallback
 const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
@@ -26,10 +30,18 @@ const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offs
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
 
+const bgOverflow = 256;
+//copy
+// const overflowCopy = new OffscreenCanvas(viewport.width, viewport.height)
+//horizontal
+// const overflowH = new OffscreenCanvas(viewport.width, bgOverflow)
+//vertical
+// const overflowV = new OffscreenCanvas(bgOverflow, viewport.height)
+
+// const ofctx = overflowCopy.getContext("2d", { alpha: false });
 
 //15360
 let worldSize = {width: 15360, height: 6666};
-const bgOverflow = 150;
 
     offscreen.width = window.innerWidth + bgOverflow*2;
     offscreen.height = window.innerHeight + bgOverflow*2;
@@ -1103,6 +1115,37 @@ CanvasRenderingContext2D.prototype.fillCirclePath = function (x,y,r,b) {
     //this.fill();
 }
 CanvasRenderingContext2D.prototype.strokeCirclePath = function (x,y,r) {
+    //this.beginPath();
+    this.arc (x,y,r,0,2*Math.PI);
+    //this.stroke();
+}
+//draw circle function
+OffscreenCanvasRenderingContext2D.prototype.strokeCircle = function (x,y,r) {
+    this.beginPath();
+    this.arc (x,y,r,0,2*Math.PI);
+    this.stroke();
+}
+//draw halfcircle function
+OffscreenCanvasRenderingContext2D.prototype.strokeHalfCircle = function (x,y,r) {
+    //this.beginPath();
+    this.arc (x,y,r,Math.PI,2*Math.PI);
+    this.stroke();
+}
+
+//draw circle function
+OffscreenCanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
+    this.beginPath();
+    this.arc (x,y,r,0,2*Math.PI);
+    this.fill();
+}
+
+//draw circle function
+OffscreenCanvasRenderingContext2D.prototype.fillCirclePath = function (x,y,r,b) {
+    //this.beginPath();
+    this.arc (x,y,r,0,2*Math.PI, b);
+    //this.fill();
+}
+OffscreenCanvasRenderingContext2D.prototype.strokeCirclePath = function (x,y,r) {
     //this.beginPath();
     this.arc (x,y,r,0,2*Math.PI);
     //this.stroke();
@@ -3342,7 +3385,7 @@ function drawSpidey(x, y) {
     // context.moveTo(x,y);
     // context.bezierCurveTo(x + spideyRadius/2, y - spideyRadius, x - spideyRadius/2, y - spideyRadius, x, y);
     // context.fill();
-    context.fillStyle = "#000000"    
+    context.fillStyle = "#ff1111"    
     context.fillCircle(x, y, spideyRadius/6);
     
     //leg
@@ -3601,11 +3644,11 @@ function drawSpidey(x, y) {
             // context.strokeStyle = "#00ffff";     
             // context.strokeCircle(anchrotx,anchroty,2)   
             // context.strokeStyle = "#000000"; 
-            context.fillStyle = "#000000"; 
+            context.fillStyle = "#ff1111"; 
         }
     
-        context.strokeStyle = "#000000";
-        context.fillStyle = "#000000";
+        context.strokeStyle = "#ff1111";
+        context.fillStyle = "#ff1111";
         context.beginPath();
         const startx = x + legOrigX;
         const starty = y + legOrigY;
@@ -3731,7 +3774,7 @@ function drawSpidey(x, y) {
     context.fillCircle(x - (3.5 - po*0.5 + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo*0.5 + (-2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
     context.fillCircle(x + (3.5 + po*0.5 - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo*0.5 + (2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
     //pupils
-    context.fillStyle = "#000000";
+    context.fillStyle = "#ff1111";
     context.fillCircle(x - (3.5 - po + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (-2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
     context.fillCircle(x + (3.5 + po - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
 
@@ -4756,14 +4799,14 @@ function move() {
             legMods[i].y -= ymov;
             // legMods[i].dy -= ymov;
             // legMods[i].jy -= ymov;
-        } 
-        else if (legMods[i].anim === walking) {
-            legMods[i].x -= xmov *0.5;
-            legMods[i].y -= ymov *0.5;
-            if(legMods[i].start === lastTimestamp){
-                legMods[i].dx += xmov;
-                legMods[i].dy += ymov;
-            }   
+        // } 
+        // else if (legMods[i].anim === walking) {
+        //     legMods[i].x -= xmov *0.5;
+        //     legMods[i].y -= ymov *0.5;
+        //     if(legMods[i].start === lastTimestamp){
+        //         legMods[i].dx += xmov;
+        //         legMods[i].dy += ymov;
+        //     }   
         }
         
         // if (0 + (radius) + buffer <= spideyPos.x &&
@@ -4823,8 +4866,9 @@ function drawEnemies(){
     })
 }
 
-
 const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
@@ -4833,13 +4877,39 @@ function drawObjects(bgXoffset, bgYoffset){
     const overdraw = bgOverflow/worldScale - 33;
     const overX = spideyPos.x - bgOffset.x
     const overY = spideyPos.y - bgOffset.y
+    const w = background.width;
+    const h = background.height;
     if(
         (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
     ) {
-        console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+            console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+            objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width, spideyPos.x + viewport.width, spideyPos.y - viewport.height, spideyPos.y + viewport.height]); 
+        
+        // //draw full bg
+        // if(Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
+        // // ofctx.drawImage(background, 
+        // //     bgOverflow-overX,bgOverflow-overY,
+        // //     w * worldScale, h * worldScale, 0, 0,
+        // //     w, h)
+        // //draw side bg 
+        // } else if (Math.abs(overX) > overdraw) {
+        //     console.log("OverdrawX", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+        //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale,}
+        //         , spideyPos.x - viewport.width*0.5,
+        //          spideyPos.x + viewport.width*0.5,
+        //           spideyPos.y - viewport.height*0.5,
+        //            spideyPos.y + viewport.height*0.5]); 
+        // //draw top/bottom bg 
+        // } else if (Math.abs(overY) > overdraw) {
+        //     console.log("OverdrawY", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+        //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale},
+        //          spideyPos.x - viewport.width*0.5,
+        //           spideyPos.x + viewport.width*0.5,
+        //            spideyPos.y - viewport.height*0.5,
+        //             spideyPos.y + viewport.height*0.5]); 
+        // }
         bgOffset.x = spideyPos.x;
         bgOffset.y = spideyPos.y;
-        objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width*0.5, spideyPos.x + viewport.width*0.5, spideyPos.y - viewport.height*0.5, spideyPos.y + viewport.height*0.5]);
     }
         } else {
         
@@ -5315,8 +5385,9 @@ function update(timestamp) {
         context.clearRect(0,0,viewport.width,viewport.height);
         vctx.clearRect(0,0,viewport.width,viewport.height);
         //source, sourceXY, WH, destXY, dWH
-            context.drawImage(background, (overdrawX * worldScale)+bgOverflow, (overdrawY * worldScale)+bgOverflow,
-            w * worldScale, h * worldScale, 0, 0,
+            context.drawImage(background, 
+                (overdrawX * worldScale) + bgOverflow, (overdrawY * worldScale) + bgOverflow,
+                w * worldScale, h * worldScale, 0, 0,
             w, h)
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
@@ -5658,7 +5729,7 @@ function wheelHandler(e) {
 function newGame(){
     console.log("Start!")
     scaleSpidey(50);
-    scaleWorld(2);
+    //scaleWorld(2);
     startgame = false;
     skipMouseInput = true;
     initScene();
@@ -5675,11 +5746,14 @@ function newGame(){
     spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
 
     
+    //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
     objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
-    objworker.onmessage = function(event){
-        //document.getElementById("result").innerHTML = event.data;
-        console.log(event.data)
-    };
+    overflowHWorker.postMessage({canvas: overflowH, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowH]);
+    overflowVWorker.postMessage({canvas: overflowV, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowV]);
+    // objworker.onmessage = function(event){
+    //     //document.getElementById("result").innerHTML = event.data;
+    //     console.log(event.data)
+    // };
 }
 
 function initScene(){
