@@ -30,7 +30,7 @@ const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offs
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
 
-const bgOverflow = 512;
+const bgOverflow = 256;
 //copy
 // const overflowCopy = new OffscreenCanvas(viewport.width, viewport.height)
 //horizontal
@@ -2563,7 +2563,7 @@ function spideyMove(leg) {
         } 
     }
     const mirror = leg < 4 ? leg + 4: leg - 4;
-    if (legMods[leg].anim === grabbing && count >= 2) {
+    if (legMods[leg].anim === grabbing && count >= 1) {
         if (jactive){
             context.fillStyle = "#ff0000";
             context.fillCircle(spideyPos.x+rotate.x, spideyPos.y+rotate.y, 3)
@@ -4875,7 +4875,7 @@ const bgOffset = {x: 0, y: 0}
 function drawObjects(bgXoffset, bgYoffset){
     if (window.Worker) {
 
-    const overdraw = bgOverflow / worldScale;
+    const overdraw = (bgOverflow - 64) / worldScale;
     const overX = spideyPos.x - bgOffset.x
     const overY = spideyPos.y - bgOffset.y
     // const w = background.width;
@@ -4884,7 +4884,7 @@ function drawObjects(bgXoffset, bgYoffset){
         (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
     ) {
             console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-            objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}, spideyPos.x - viewport.width, spideyPos.x + viewport.width, spideyPos.y - viewport.height, spideyPos.y + viewport.height]); 
+            objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}]); 
         
         // //draw full bg
         // if(Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
@@ -5118,7 +5118,7 @@ function firstFrame(timestamp) {
 
 //main game draw
 function update(timestamp) {
-    drawFrame(update);
+    requestAnimationFrame(update);
     deltaTime = Math.min(10,(deltaTime + ((timestamp - lastTimestamp) / perfectFrameTime)) / 2);
     prevTimestamp = lastTimestamp;
     lastTimestamp = timestamp;
@@ -5384,7 +5384,6 @@ function update(timestamp) {
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
         
         drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
-
         context.clearRect(0,0,viewport.width,viewport.height);
         vctx.clearRect(0,0,viewport.width,viewport.height);
         //source, sourceXY, WH, destXY, dWH
@@ -5392,6 +5391,8 @@ function update(timestamp) {
                 (overdrawX * worldScale) + bgOverflow, (overdrawY * worldScale) + bgOverflow,
                 w * worldScale, h * worldScale, 0, 0,
             w, h)
+
+
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
         //     w, h)
@@ -5748,7 +5749,7 @@ function newGame(){
 
     
     //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
-    objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
+    objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0], x: spideyPos.x, y: spideyPos.y, s: worldScale}, [offscreen]);
     // overflowHWorker.postMessage({canvas: overflowH, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowH]);
     // overflowVWorker.postMessage({canvas: overflowV, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowV]);
     // objworker.onmessage = function(event){
