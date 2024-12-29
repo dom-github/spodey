@@ -2556,14 +2556,14 @@ function spideyMove(leg) {
     const x = (spideyLegs[leg].x + legMods[leg].x);
     const y = (spideyLegs[leg].y + legMods[leg].y);
     //x and y offset in relation to spidey
-    // let count = 0;
-    // for(let i=0; i < spideyLegs.length; i++) {
-    //     if(legMods[i].anim === grabbing) {
-    //         count++
-    //     } 
-    // }
+    let count = 0;
+    for(let i=0; i < spideyLegs.length; i++) {
+        if(legMods[i].anim === grabbing) {
+            count++
+        } 
+    }
     const mirror = leg < 4 ? leg + 4: leg - 4;
-    if (legMods[leg].anim === grabbing) {
+    if (legMods[leg].anim === grabbing && count >= 2) {
         if (jactive){
             context.fillStyle = "#ff0000";
             context.fillCircle(spideyPos.x+rotate.x, spideyPos.y+rotate.y, 3)
@@ -2571,22 +2571,22 @@ function spideyMove(leg) {
         }
         
          const dist = Math.sqrt(x * x + y * y);
-        //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y);
-        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3))){}
+        //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y) //legMods[mirror].anim !== walking;
+        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 5))){}
         else if(Math.abs(speed.components[0]) > EPSILON
             || Math.abs(speed.components[1]) > EPSILON){
-            if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3)  && legMods[mirror].anim === walking){
+            if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
                 //only change rotation on "too close" legs 
-                // legMods[leg].dx += rotate.x - spideyLegs[leg].x;
-                // legMods[leg].dy += rotate.y - spideyLegs[leg].y;
+                legMods[leg].dx += (speed.components[0]*10) * spiScl + rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy += (speed.components[1]*10) * spiScl + rotate.y - spideyLegs[leg].y;
             } else {
             //console.log("Moving");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl + rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl + rotate.y - spideyLegs[leg].y;
+            legMods[leg].dx = (speed.components[0]*10) * spiScl;
+            legMods[leg].dy = (speed.components[1]*10) * spiScl;
 
             }
         }
@@ -2601,8 +2601,8 @@ function spideyMove(leg) {
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*deltaTime) * spiScl + rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = (speed.components[1]*deltaTime) * spiScl + rotate.y - spideyLegs[leg].y;
+            legMods[leg].dx = (speed.components[0]*10) * spiScl + rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = (speed.components[1]*10) * spiScl + rotate.y - spideyLegs[leg].y;
         }
         
     }
@@ -2793,7 +2793,7 @@ function spideyCollider() {
     context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius);
     context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius * 0.66 * Math.min(1.33, spiScl));
     context.strokeStyle = "#ee9999"
-    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius / 3);
+    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius / 5);
     context.strokeStyle = "#000000"
     }
 }
@@ -3322,17 +3322,9 @@ let prevyrot = [yrotation,0,0,0,
     yrotation,0,0,0,
     yrotation,0,0,0,
     yrotation,0,0,0,
-    yrotation,0,0,0,
-    yrotation,0,0,0,
     0,0,0,yrotation
 ];
 let prevxrot = [xrotation,0,0,0,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
@@ -3358,8 +3350,8 @@ function drawSpidey(x, y) {
         if(!falling && legMods[e].anim < grabWeb){
             sumy += legMods[e].jy + spideyLegs[e].y;
             sumx += legMods[e].jx + spideyLegs[e].x;
-            yrotation = doubleClamp(sumy / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.5 * Math.min(1.33, spiScl));
-            xrotation = doubleClamp(sumx / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.5 * Math.min(1.33, spiScl));
+            yrotation = doubleClamp(sumy / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.66 * Math.min(1.33, spiScl));
+            xrotation = doubleClamp(sumx / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.66 * Math.min(1.33, spiScl));
         }
     }
     if (Math.abs(yrotation) >= 0) {
@@ -3385,7 +3377,7 @@ function drawSpidey(x, y) {
     // context.moveTo(x,y);
     // context.bezierCurveTo(x + spideyRadius/2, y - spideyRadius, x - spideyRadius/2, y - spideyRadius, x, y);
     // context.fill();
-    context.fillStyle = "#ff1111"    
+    context.fillStyle = "#000000"    
     context.fillCircle(x, y, spideyRadius/6);
     
     //leg
@@ -3644,11 +3636,11 @@ function drawSpidey(x, y) {
             // context.strokeStyle = "#00ffff";     
             // context.strokeCircle(anchrotx,anchroty,2)   
             // context.strokeStyle = "#000000"; 
-            context.fillStyle = "#ff1111"; 
+            context.fillStyle = "#000000"; 
         }
     
-        context.strokeStyle = "#ff1111";
-        context.fillStyle = "#ff1111";
+        context.strokeStyle = "#000000";
+        context.fillStyle = "#000000";
         context.beginPath();
         const startx = x + legOrigX;
         const starty = y + legOrigY;
@@ -3774,7 +3766,7 @@ function drawSpidey(x, y) {
     context.fillCircle(x - (3.5 - po*0.5 + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo*0.5 + (-2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
     context.fillCircle(x + (3.5 + po*0.5 - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo*0.5 + (2 * xrotation/spideyRadius)) * spiScl, 2.5 * spiScl);
     //pupils
-    context.fillStyle = "#ff1111";
+    context.fillStyle = "#000000";
     context.fillCircle(x - (3.5 - po + (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (-2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
     context.fillCircle(x + (3.5 + po - (2 * xrotation/spideyRadius)) * spiScl, y - (2 - eo + (2 * xrotation/spideyRadius)) * spiScl, 2 * spiScl);
 
@@ -4799,14 +4791,23 @@ function move() {
             legMods[i].y -= ymov;
             // legMods[i].dy -= ymov;
             // legMods[i].jy -= ymov;
-        // } 
-        // else if (legMods[i].anim === walking) {
-        //     legMods[i].x -= xmov *0.5;
-        //     legMods[i].y -= ymov *0.5;
-        //     if(legMods[i].start === lastTimestamp){
-        //         legMods[i].dx += xmov;
-        //         legMods[i].dy += ymov;
-        //     }   
+            legMods[i].x = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x, Math.min(legMods[i].x, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x));
+            legMods[i].y = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y, Math.min(legMods[i].y, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y));
+         
+        } 
+        else if (legMods[i].anim === walking) {
+            legMods[i].x -= xmov;
+            legMods[i].y -= ymov;
+
+            legMods[i].x = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x, Math.min(legMods[i].x, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x));
+            legMods[i].y = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y, Math.min(legMods[i].y, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y));
+            legMods[i].dx = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x, Math.min(legMods[i].dx, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x));
+            legMods[i].dy = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y, Math.min(legMods[i].dy, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y));
+     
+            // if(legMods[i].start === lastTimestamp){
+            //     legMods[i].dx += xmov;
+            //     legMods[i].dy += ymov;
+            // }
         }
         
         // if (0 + (radius) + buffer <= spideyPos.x &&
@@ -4874,7 +4875,7 @@ const bgOffset = {x: 0, y: 0}
 function drawObjects(bgXoffset, bgYoffset){
     if (window.Worker) {
 
-    const overdraw = bgOverflow/worldScale - 33;
+    const overdraw = bgOverflow / worldScale;
     const overX = spideyPos.x - bgOffset.x
     const overY = spideyPos.y - bgOffset.y
     // const w = background.width;
