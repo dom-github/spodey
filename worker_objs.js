@@ -1,4 +1,4 @@
-let canvas, bgctx, scnObj, boundaryCircles, boundaryColliders, areaBoxes, worldScale;
+let canvas, bgctx, scnObj, boundaryCircles, boundaryColliders, areaBoxes, worldScale, cameraX, cameraY;
 
 let worldSize = {width: 15360, height: 6666};
 
@@ -21,60 +21,76 @@ onmessage = function(event){
     //document.getElementById("result").innerHTML = event.data;
     //console.log(event);
     //this.postMessage("Messge from worker")
-    if(event.data.canvas){
+    // if (event.data.type === 1) {
+    //     console.log("Special!", event.data)
+    //     bgctx.save();
+    //     bgctx.translate(-event.data.x, -event.data.y);
+    //     bgctx.drawImage(canvas, -1024, 0, canvas.width - 256, canvas.height - 256, 0, 0, canvas.width - 256, canvas.height - 256)
+    //     bgctx.restore();
+    // } else
+
+    if(!event.data.canvas){ 
+        //render()
+        cameraX = event.data[0].x
+        cameraY = event.data[0].y
+        if(worldScale !== event.data[0].s){
+            bgctx.scale(1/worldScale, 1/worldScale);
+            worldScale = event.data[0].s;
+            bgctx.scale(worldScale, worldScale);
+        }
+        requestAnimationFrame(render);
+        
+    } else {
         canvas = event.data.canvas;
         bgctx = canvas.getContext("2d", { alpha: false });
         scnObj = event.data.scnObj;
         boundaryCircles = event.data.boundaryCircles;
         boundaryColliders = event.data.boundaryColliders;
         areaBoxes = event.data.areaBoxes;
+        //
     }
-    function render(time) {
-        bgctx.scale(1/worldScale, 1/worldScale);
-        worldScale = event.data[0].s;
-        bgctx.scale(worldScale, worldScale);
-        bgctx.save();
-        bgctx.translate(-event.data[0].x, -event.data[0].y);
-        scnObj.forEach((x) => {
-            if(x.type === ground){
-                    //          
-                    paintGround(x.id, x.length);  
-                }
-            if(
-                x.max.x > event.data[1]//spideyPos.x - viewport.width - overdraw
-                && x.min.x < event.data[2]//spideyPos.x + viewport.width + overdraw
-                && x.max.y > event.data[3]//spideyPos.y - viewport.height - overdraw
-                && x.min.y < event.data[4]//spideyPos.y + viewport.height + overdraw
-            ){
-                //animate
-                switch (x.type){
-                    case rockMed:
-                        paintRockMed(x.id, x.length); 
-                        break
-                    case stopSign:
-                        paintStopSign(x.id, x.length);  
-                        break
-                    case tree:
-                        paintTree(x.id, x.length, x.circID, x.circLen);  
-                        break
-                    case cactus:
-                        paintCactus(x.id, x.length, x.circID, x.circLen);  
-                        break
-                    case flower:
-                        paintFlower(x.id, x.length, x.circID, x.circLen);  
-                        break
-                }
-            }
-        })
-        bgctx.restore();
-       // requestAnimationFrame(render);
-    }
-    if(!event.data.canvas) render()//requestAnimationFrame(render);
-
 
 
 };
 
+function render(time) {
+    bgctx.save();
+    bgctx.translate(-cameraX, -cameraY);
+    scnObj.forEach((x) => {
+        if(x.type === ground){
+                //          
+                paintGround(x.id, x.length);  
+            }
+        if(
+            x.max.x > cameraX - canvas.width * worldScale//spideyPos.x - viewport.width - overdraw
+            && x.min.x < cameraX + canvas.width * worldScale//spideyPos.x + viewport.width + overdraw
+            && x.max.y > cameraY - canvas.height * worldScale//spideyPos.y - viewport.height - overdraw
+            && x.min.y < cameraY + canvas.height * worldScale//spideyPos.y + viewport.height + overdraw
+        ){
+            //animate
+            switch (x.type){
+                case rockMed:
+                    paintRockMed(x.id, x.length); 
+                    break
+                case stopSign:
+                    paintStopSign(x.id, x.length);  
+                    break
+                case tree:
+                    paintTree(x.id, x.length, x.circID, x.circLen);  
+                    break
+                case cactus:
+                    paintCactus(x.id, x.length, x.circID, x.circLen);  
+                    break
+                case flower:
+                    paintFlower(x.id, x.length, x.circID, x.circLen);  
+                    break
+            }
+        }
+    })
+    bgctx.restore();    
+    
+    //
+}
     function paintGround(id, length){
     
         // Create gradient
