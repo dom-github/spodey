@@ -345,8 +345,8 @@ function paintTree(id, len){
     // bark.addColorStop(1,"#7A6252")
     bgctx.fillStyle = "#775137"; 
     bgctx.strokeStyle = "#3A2B22";
-    bgctx.lineWidth = 2.1;
-    bgctx.lineCap= "round";
+    bgctx.lineWidth = 2; //whole #s only for performance
+    //bgctx.lineCap= "round";
 
     bgctx.beginPath();
     bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
@@ -357,18 +357,18 @@ function paintTree(id, len){
         bgctx.lineTo(obj.p2.x, obj.p2.y);
     }
     bgctx.fill();
+    bgctx.stroke();
 
     //outline
-    bgctx.beginPath();
-    //bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
-    for(let i = id; i < id + len; i++){
-        const obj = boundaryColliders[i]
-            bgctx.moveTo(obj.p1.x, obj.p1.y);
-            bgctx.lineTo(obj.p2.x, obj.p2.y);
+    // bgctx.beginPath();
+    // //bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
+    // for(let i = id; i < id + len; i++){
+    //     const obj = boundaryColliders[i]
+    //         bgctx.moveTo(obj.p1.x, obj.p1.y);
+    //         bgctx.lineTo(obj.p2.x, obj.p2.y);
 
-        }
+    //     }
     //bgctx.setLineDash([15, 10, 5, 10]);
-    bgctx.stroke();
 
     //bark
     // const top = boundaryColliders[id+len/2].p1.x

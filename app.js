@@ -5367,11 +5367,6 @@ function update(timestamp) {
     if (!startgame){
 
 
-            //player movement
-            processInput();
-            move();
-            //gravity + forces
-            gravity();
         const w = viewport.width;
         const h = viewport.height; 
         const bgw = canvas.width / worldScale;
@@ -5384,14 +5379,13 @@ function update(timestamp) {
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
         
         drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
-        context.clearRect(0,0,viewport.width,viewport.height);
-        vctx.clearRect(0,0,viewport.width,viewport.height);
+        // context.clearRect(0,0,viewport.width,viewport.height);
+        // vctx.clearRect(0,0,viewport.width,viewport.height);
         //source, sourceXY, WH, destXY, dWH
             context.drawImage(background, 
                 (overdrawX * worldScale) + bgOverflow, (overdrawY * worldScale) + bgOverflow,
                 w * worldScale, h * worldScale, 0, 0,
             w, h)
-
 
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
@@ -5404,6 +5398,11 @@ function update(timestamp) {
             );
             //context.scale(worldScale, worldScale);
             
+            //player movement
+            processInput();
+            move();
+            //gravity + forces
+            gravity();
             processAI();
             drawProjectiles();
             drawWebs();
@@ -5422,6 +5421,9 @@ function update(timestamp) {
             w, h, 
             0, 0, 
             w, h)
+
+        
+    
         //vctx.drawImage(canvas,0,0,worldCanvas.width, canvas.height,0,0,worldCanvas.width, canvas.height)
        
         //Leg Hover 
