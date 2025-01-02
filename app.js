@@ -1,14 +1,14 @@
 //const e = require("express");
 
-//const canvas = document.getElementById("worldCanvas");
-//const UI = document.getElementById("UI");
+const canvas = document.getElementById("worldCanvas");
+const UI = document.getElementById("UI");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
-const offscreen = background.transferControlToOffscreen();
+//const offscreen = background.transferControlToOffscreen();
 
 //const offscreen = new OffscreenCanvas(window.innerWidth, window.innerHeight);
-const canvas = new OffscreenCanvas(window.innerWidth, window.innerHeight);
-const UI = new OffscreenCanvas(window.innerWidth, window.innerHeight);
+// const canvas = new OffscreenCanvas(window.innerWidth, window.innerHeight);
+// const UI = new OffscreenCanvas(window.innerWidth, window.innerHeight);
 
 
 viewport.width = window.innerWidth;
@@ -25,7 +25,7 @@ const uictx = UI.getContext("2d", { alpha: true });
 //temp: dummy canvas for single-thread fallback
 // const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
 // const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offscreen.getContext("2d", { alpha: false });
-const bgctx = offscreen.getContext("2d", { alpha: false });
+const bgctx = background.getContext("2d", { alpha: false });
 
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
@@ -43,8 +43,8 @@ const bgOverflow = 256;
 //15360
 let worldSize = {width: 15360, height: 6666};
 
-offscreen.width = window.innerWidth + bgOverflow*2;
-offscreen.height = window.innerHeight + bgOverflow*2;
+background.width = window.innerWidth + bgOverflow*2;
+background.height = window.innerHeight + bgOverflow*2;
 bgctx.width = window.innerWidth + bgOverflow*2;
 bgctx.height = window.innerHeight + bgOverflow*2;
 // if(!window.Worker){
@@ -82,8 +82,8 @@ function setDim() {
     //if(!window.Worker){
         bgctx.width = window.innerWidth + bgOverflow*2;
         bgctx.height = window.innerHeight + bgOverflow*2;
-        offscreen.width = window.innerWidth + bgOverflow*2;
-        offscreen.height = window.innerHeight + bgOverflow*2;
+        background.width = window.innerWidth + bgOverflow*2;
+        background.height = window.innerHeight + bgOverflow*2;
     //}
     
 
