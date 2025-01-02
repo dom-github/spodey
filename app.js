@@ -30,7 +30,7 @@ const bgctx = background.getContext("2d", { alpha: false });
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
 
-const bgOverflow = 256;
+const bgOverflow = 0;
 //copy
 // const overflowCopy = new OffscreenCanvas(viewport.width, viewport.height)
 //horizontal
@@ -1122,37 +1122,37 @@ CanvasRenderingContext2D.prototype.strokeCirclePath = function (x,y,r) {
     this.arc (x,y,r,0,2*Math.PI);
     //this.stroke();
 }
-//draw circle function
-OffscreenCanvasRenderingContext2D.prototype.strokeCircle = function (x,y,r) {
-    this.beginPath();
-    this.arc (x,y,r,0,2*Math.PI);
-    this.stroke();
-}
-//draw halfcircle function
-OffscreenCanvasRenderingContext2D.prototype.strokeHalfCircle = function (x,y,r) {
-    //this.beginPath();
-    this.arc (x,y,r,Math.PI,2*Math.PI);
-    this.stroke();
-}
+// //draw circle function
+// OffscreenCanvasRenderingContext2D.prototype.strokeCircle = function (x,y,r) {
+//     this.beginPath();
+//     this.arc (x,y,r,0,2*Math.PI);
+//     this.stroke();
+// }
+// //draw halfcircle function
+// OffscreenCanvasRenderingContext2D.prototype.strokeHalfCircle = function (x,y,r) {
+//     //this.beginPath();
+//     this.arc (x,y,r,Math.PI,2*Math.PI);
+//     this.stroke();
+// }
 
-//draw circle function
-OffscreenCanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
-    this.beginPath();
-    this.arc (x,y,r,0,2*Math.PI);
-    this.fill();
-}
+// //draw circle function
+// OffscreenCanvasRenderingContext2D.prototype.fillCircle = function (x,y,r) {
+//     this.beginPath();
+//     this.arc (x,y,r,0,2*Math.PI);
+//     this.fill();
+// }
 
-//draw circle function
-OffscreenCanvasRenderingContext2D.prototype.fillCirclePath = function (x,y,r,b) {
-    //this.beginPath();
-    this.arc (x,y,r,0,2*Math.PI, b);
-    //this.fill();
-}
-OffscreenCanvasRenderingContext2D.prototype.strokeCirclePath = function (x,y,r) {
-    //this.beginPath();
-    this.arc (x,y,r,0,2*Math.PI);
-    //this.stroke();
-}
+// //draw circle function
+// OffscreenCanvasRenderingContext2D.prototype.fillCirclePath = function (x,y,r,b) {
+//     //this.beginPath();
+//     this.arc (x,y,r,0,2*Math.PI, b);
+//     //this.fill();
+// }
+// OffscreenCanvasRenderingContext2D.prototype.strokeCirclePath = function (x,y,r) {
+//     //this.beginPath();
+//     this.arc (x,y,r,0,2*Math.PI);
+//     //this.stroke();
+// }
 //canvas.addEventListener('click', clickFunction, false);
 //canvas.addEventListener('mouserelease', function(){console.log('mouserel')}, false);
 
