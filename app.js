@@ -82,8 +82,8 @@ function setDim() {
     //if(!window.Worker){
         bgctx.width = window.innerWidth + bgOverflow*2;
         bgctx.height = window.innerHeight + bgOverflow*2;
-        offscreen.width = window.innerWidth //+ bgOverflow*2;
-        offscreen.height = window.innerHeight //+ bgOverflow*2;
+        offscreen.width = window.innerWidth + bgOverflow*2;
+        offscreen.height = window.innerHeight + bgOverflow*2;
     //}
     
 
@@ -483,15 +483,16 @@ let OlegOrigins = [
 
 function scaleWorld(news){
     //temp: redraw background hack
-    // bgOffset.x = -9999;
-    // bgOffset.y = -9999;
+    bgOffset.x = -9999;
+    bgOffset.y = -9999;
         context.scale(1/worldScale, 1/worldScale);
         //if(!window.Worker){
             bgctx.scale(1/worldScale, 1/worldScale);
-            bgctx.scale(news, news);
+            //bgctx.scale(news, news);
         //}
         worldScale = Math.max(1, Math.min(8,news));
         context.scale(worldScale, worldScale);
+        bgctx.scale(worldScale, worldScale);
         console.log(worldScale);
 
 }
