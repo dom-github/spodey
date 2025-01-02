@@ -23,9 +23,9 @@ const uictx = UI.getContext("2d", { alpha: true });
 
 
 //temp: dummy canvas for single-thread fallback
-const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
-const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offscreen.getContext("2d", { alpha: false });
-
+// const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
+// const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offscreen.getContext("2d", { alpha: false });
+const bgctx = offscreen.getContext("2d", { alpha: false });
 
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
@@ -43,12 +43,14 @@ const bgOverflow = 256;
 //15360
 let worldSize = {width: 15360, height: 6666};
 
-    offscreen.width = window.innerWidth + bgOverflow*2;
-    offscreen.height = window.innerHeight + bgOverflow*2;
-if(!window.Worker){
-    bgctx.width = window.innerWidth;
-    bgctx.height = window.innerHeight;
-}
+offscreen.width = window.innerWidth + bgOverflow*2;
+offscreen.height = window.innerHeight + bgOverflow*2;
+bgctx.width = window.innerWidth + bgOverflow*2;
+bgctx.height = window.innerHeight + bgOverflow*2;
+// if(!window.Worker){
+//     bgctx.width = window.innerWidth;
+//     bgctx.height = window.innerHeight;
+// }
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 // canvas.width = worldSize.width;
@@ -77,12 +79,12 @@ function setDim() {
     uictx.height = window.innerHeight;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    if(!window.Worker){
-        bgctx.width = window.innerWidth;
-        bgctx.height = window.innerHeight;
-        offscreen.width = window.innerWidth + bgOverflow*2;
-        offscreen.height = window.innerHeight + bgOverflow*2;
-    }
+    //if(!window.Worker){
+        bgctx.width = window.innerWidth + bgOverflow*2;
+        bgctx.height = window.innerHeight + bgOverflow*2;
+        offscreen.width = window.innerWidth //+ bgOverflow*2;
+        offscreen.height = window.innerHeight //+ bgOverflow*2;
+    //}
     
 
     if(startgame) {
@@ -484,10 +486,10 @@ function scaleWorld(news){
     // bgOffset.x = -9999;
     // bgOffset.y = -9999;
         context.scale(1/worldScale, 1/worldScale);
-        if(!window.Worker){
+        //if(!window.Worker){
             bgctx.scale(1/worldScale, 1/worldScale);
             bgctx.scale(news, news);
-        }
+        //}
         worldScale = Math.max(1, Math.min(8,news));
         context.scale(worldScale, worldScale);
         console.log(worldScale);
@@ -2062,8 +2064,8 @@ function paintTree(id, len){
     // bark.addColorStop(1,"#7A6252")
     bgctx.fillStyle = "#775137"; 
     bgctx.strokeStyle = "#3A2B22";
-    bgctx.lineWidth = 2.1;
-    bgctx.lineCap= "round";
+    bgctx.lineWidth = 2;
+    //bgctx.lineCap= "round";
 
     bgctx.beginPath();
     bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
@@ -2074,19 +2076,19 @@ function paintTree(id, len){
         bgctx.lineTo(obj.p2.x, obj.p2.y);
     }
     bgctx.fill();
-
-    //outline
-    bgctx.beginPath();
-    //bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
-    for(let i = id; i < id + len; i++){
-        const obj = boundaryColliders[i]
-            bgctx.moveTo(obj.p1.x, obj.p1.y);
-            bgctx.lineTo(obj.p2.x, obj.p2.y);
-
-        }
-    //bgctx.setLineDash([15, 10, 5, 10]);
     bgctx.stroke();
 
+    //outline
+    // bgctx.beginPath();
+    // //bgctx.moveTo(boundaryColliders[id].p1.x, boundaryColliders[id].p1.y);
+    // for(let i = id; i < id + len; i++){
+    //     const obj = boundaryColliders[i]
+    //         bgctx.moveTo(obj.p1.x, obj.p1.y);
+    //         bgctx.lineTo(obj.p2.x, obj.p2.y);
+
+    //     }
+
+    //bgctx.setLineDash([15, 10, 5, 10]);
     //bark
     // const top = boundaryColliders[id+len/2].p1.x
     // const height = boundaryColliders[id+len/2].p1.y
@@ -2094,55 +2096,56 @@ function paintTree(id, len){
     //const obj = boundaryColliders[id]
     // bgctx.moveTo(left, obj.p1.y);
     // bgctx.lineTo(top, height);
-    if(len > 3){
-        bgctx.strokeStyle = "#563A27";
-    for(let i = id; i < id + (len/2); i++){
-        const obj = boundaryColliders[i]
-        const dx = obj.p1.x - boundaryColliders[(id + len-1) - (i-id)].p2.x;
-        const dy = obj.p1.y - boundaryColliders[(id + len-1) - (i-id)].p2.y;
-        let small = Math.hypot(dx,dy) > 50;
-        if(small){
-            bgctx.lineWidth = Math.max(0.5, (len/2)-1);
-            bgctx.beginPath();
-            bgctx.moveTo(obj.p1.x-(dx*0.5), obj.p1.y-(dy*0.5)-5);
-            if(i === id+len/2-1){
-                bgctx.lineTo(obj.p2.x, obj.p2.y);
-            } else {
-                bgctx.lineTo(obj.p2.x-(dx*0.5), obj.p2.y-(dy*0.5));
-            }
-            bgctx.setLineDash([5,120]);
-            bgctx.lineCap = "round";
-            bgctx.stroke();
-        }
+    // if(len > 3){
+    //     bgctx.strokeStyle = "#563A27";
+    // for(let i = id; i < id + (len/2); i++){
+    //     const obj = boundaryColliders[i]
+    //     const dx = obj.p1.x - boundaryColliders[(id + len-1) - (i-id)].p2.x;
+    //     const dy = obj.p1.y - boundaryColliders[(id + len-1) - (i-id)].p2.y;
+    //     let small = Math.hypot(dx,dy) > 50;
+    //     if(small){
+    //         bgctx.lineWidth = Math.max(0.5, (len/2)-1);
+    //         bgctx.beginPath();
+    //         bgctx.moveTo(obj.p1.x-(dx*0.5), obj.p1.y-(dy*0.5)-5);
+    //         if(i === id+len/2-1){
+    //             bgctx.lineTo(obj.p2.x, obj.p2.y);
+    //         } else {
+    //             bgctx.lineTo(obj.p2.x-(dx*0.5), obj.p2.y-(dy*0.5));
+    //         }
+    //         bgctx.setLineDash([5,120]);
+    //         bgctx.lineCap = "round";
+    //         bgctx.stroke();
+    //     }
         
 
-        bgctx.lineWidth = Math.max(0.5, (len/2)-1) * 0.5;
-        bgctx.lineWidth -= small ? 1 : 0;
-        bgctx.beginPath();
-        bgctx.moveTo(obj.p1.x-(dx*0.25), obj.p1.y-(dy*0.25));
-        if(i === id+len/2-1){
-            bgctx.lineTo(obj.p2.x, obj.p2.y);
-        } else {
-            bgctx.lineTo(obj.p2.x-(dx*0.25), obj.p2.y-(dy*0.25));
-        }
-        bgctx.lineCap = "butt";
-        bgctx.setLineDash([35, 70, 5, 20, 18, 33, 25]);
-        bgctx.stroke();
+    //     bgctx.lineWidth = Math.max(0.5, (len/2)-1) * 0.5;
+    //     bgctx.lineWidth -= small ? 1 : 0;
+    //     bgctx.beginPath();
+    //     bgctx.moveTo(obj.p1.x-(dx*0.25), obj.p1.y-(dy*0.25));
+    //     if(i === id+len/2-1){
+    //         bgctx.lineTo(obj.p2.x, obj.p2.y);
+    //     } else {
+    //         bgctx.lineTo(obj.p2.x-(dx*0.25), obj.p2.y-(dy*0.25));
+    //     }
+    //     bgctx.lineCap = "butt";
+    //     bgctx.setLineDash([35, 70, 5, 20, 18, 33, 25]);
+    //     bgctx.stroke();
         
-        bgctx.beginPath();
-        bgctx.moveTo(obj.p1.x-(dx*0.75), obj.p1.y-(dy*0.75));
-        if(i === id+len/2-1){
-            bgctx.lineTo(obj.p2.x, obj.p2.y);
-        } else {
-            bgctx.lineTo(obj.p2.x-(dx*0.75), obj.p2.y-(dy*0.75));
-        }
-        bgctx.setLineDash([15, 60, 15, 25, 40, 30, 55]);
-        bgctx.lineCap = "butt";
-        bgctx.stroke();
+    //     bgctx.beginPath();
+    //     bgctx.moveTo(obj.p1.x-(dx*0.75), obj.p1.y-(dy*0.75));
+    //     if(i === id+len/2-1){
+    //         bgctx.lineTo(obj.p2.x, obj.p2.y);
+    //     } else {
+    //         bgctx.lineTo(obj.p2.x-(dx*0.75), obj.p2.y-(dy*0.75));
+    //     }
+    //     bgctx.setLineDash([15, 60, 15, 25, 40, 30, 55]);
+    //     bgctx.lineCap = "butt";
+    //     bgctx.stroke();
 
-        }
-    bgctx.setLineDash([]);
-    bgctx.lineWidth = 1.0;}
+    //     }
+    //     bgctx.setLineDash([]);
+    //     bgctx.lineWidth = 1.0;
+    // }
 
     //roots
     // bgctx.beginPath();
@@ -4867,14 +4870,12 @@ function drawEnemies(){
     })
 }
 
-const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+//const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 // const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 // const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 const bgOffset = {x: 0, y: 0}
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
-    if (window.Worker) {
-
     const overdraw = (bgOverflow - 64) / worldScale;
     const overX = spideyPos.x - bgOffset.x
     const overY = spideyPos.y - bgOffset.y
@@ -4883,40 +4884,43 @@ function drawObjects(bgXoffset, bgYoffset){
     if(
         (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
     ) {
-            console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-            objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}]); 
-        
-        // //draw full bg
-        // if(Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
-        // // ofctx.drawImage(background, 
-        // //     bgOverflow-overX,bgOverflow-overY,
-        // //     w * worldScale, h * worldScale, 0, 0,
-        // //     w, h)
-        // //draw side bg 
-        // } else if (Math.abs(overX) > overdraw) {
-        //     console.log("OverdrawX", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-        //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale,}
-        //         , spideyPos.x - viewport.width*0.5,
-        //          spideyPos.x + viewport.width*0.5,
-        //           spideyPos.y - viewport.height*0.5,
-        //            spideyPos.y + viewport.height*0.5]); 
-        // //draw top/bottom bg 
-        // } else if (Math.abs(overY) > overdraw) {
-        //     console.log("OverdrawY", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-        //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale},
-        //          spideyPos.x - viewport.width*0.5,
-        //           spideyPos.x + viewport.width*0.5,
-        //            spideyPos.y - viewport.height*0.5,
-        //             spideyPos.y + viewport.height*0.5]); 
-        // }
-        bgOffset.x = spideyPos.x;
-        bgOffset.y = spideyPos.y;
-    }
+        if (window.Worker && 0) {
+
+                console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+                objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}]); 
+            
+            // //draw full bg
+            // if(Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
+            // // ofctx.drawImage(background, 
+            // //     bgOverflow-overX,bgOverflow-overY,
+            // //     w * worldScale, h * worldScale, 0, 0,
+            // //     w, h)
+            // //draw side bg 
+            // } else if (Math.abs(overX) > overdraw) {
+            //     console.log("OverdrawX", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+            //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale,}
+            //         , spideyPos.x - viewport.width*0.5,
+            //          spideyPos.x + viewport.width*0.5,
+            //           spideyPos.y - viewport.height*0.5,
+            //            spideyPos.y + viewport.height*0.5]); 
+            // //draw top/bottom bg 
+            // } else if (Math.abs(overY) > overdraw) {
+            //     console.log("OverdrawY", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+            //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale},
+            //          spideyPos.x - viewport.width*0.5,
+            //           spideyPos.x + viewport.width*0.5,
+            //            spideyPos.y - viewport.height*0.5,
+            //             spideyPos.y + viewport.height*0.5]); 
+            // }
+            bgOffset.x = spideyPos.x;
+            bgOffset.y = spideyPos.y;
         } else {
         
         // const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
         // const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
 
+        bgOffset.x = spideyPos.x;
+        bgOffset.y = spideyPos.y;
         bgctx.save();
         bgctx.translate(-bgXoffset, -bgYoffset);
         
@@ -4971,6 +4975,7 @@ function drawObjects(bgXoffset, bgYoffset){
         
         bgctx.restore();
     //}
+    }
     }
 }
 
@@ -5378,7 +5383,6 @@ function update(timestamp) {
         const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
         
-        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
         // context.clearRect(0,0,viewport.width,viewport.height);
         // vctx.clearRect(0,0,viewport.width,viewport.height);
         //source, sourceXY, WH, destXY, dWH
@@ -5387,6 +5391,7 @@ function update(timestamp) {
                 w * worldScale, h * worldScale, 0, 0,
             w, h)
 
+        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
         //     w, h)
@@ -5751,7 +5756,7 @@ function newGame(){
 
     
     //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
-    objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0], x: spideyPos.x, y: spideyPos.y, s: worldScale}, [offscreen]);
+    //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0], x: spideyPos.x, y: spideyPos.y, s: worldScale}, [offscreen]);
     // overflowHWorker.postMessage({canvas: overflowH, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowH]);
     // overflowVWorker.postMessage({canvas: overflowV, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowV]);
     // objworker.onmessage = function(event){
