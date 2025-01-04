@@ -30,7 +30,7 @@ const bgctx = background.getContext("2d", { alpha: false });
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
 
-const bgOverflow = 0;
+const bgOverflow = 256;
 //copy
 // const overflowCopy = new OffscreenCanvas(viewport.width, viewport.height)
 //horizontal
@@ -43,16 +43,20 @@ const bgOverflow = 0;
 //15360
 let worldSize = {width: 15360, height: 6666};
 
-background.width = window.innerWidth + bgOverflow*2;
-background.height = window.innerHeight + bgOverflow*2;
 bgctx.width = window.innerWidth + bgOverflow*2;
 bgctx.height = window.innerHeight + bgOverflow*2;
+background.width = window.innerWidth + bgOverflow*2;
+background.height = window.innerHeight + bgOverflow*2;
 // if(!window.Worker){
 //     bgctx.width = window.innerWidth;
 //     bgctx.height = window.innerHeight;
 // }
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
+UI.width =  window.innerWidth;
+UI.height = window.innerHeight;
+uictx.width =  window.innerWidth;
+uictx.height = window.innerHeight;
 // canvas.width = worldSize.width;
 // canvas.height = worldSize.height;
 
@@ -5372,6 +5376,12 @@ function update(timestamp) {
     //game 
     if (!startgame){
 
+            //player movement
+            processInput();
+            move();
+            //gravity + forces
+            gravity();
+            processAI();
 
         const w = viewport.width;
         const h = viewport.height; 
@@ -5392,10 +5402,11 @@ function update(timestamp) {
                 w * worldScale, h * worldScale, 0, 0,
             w, h)
 
-        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
         //     w, h)
+
+        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
 
         context.save();
         context.translate(
@@ -5404,12 +5415,6 @@ function update(timestamp) {
             );
             //context.scale(worldScale, worldScale);
             
-            //player movement
-            processInput();
-            move();
-            //gravity + forces
-            gravity();
-            processAI();
             drawProjectiles();
             drawWebs();
             drawCursor();
@@ -5943,17 +5948,17 @@ function drawMobileUI() {
     uictx.fillCirclePath(UIButtons[1].avg.x, UIButtons[1].avg.y, 10 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
-    for(let i=0;i<spideyLegs.length;i++){
-        const xanchor = UIButtons[1].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+    for(let i=0;i<OspideyLegs.length;i++){
+        const xanchor = UIButtons[1].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
-        const yanchor = UIButtons[1].avg.y - spideyLegs[i].y * (size/100)
-            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        const yanchor = UIButtons[1].avg.y - OspideyLegs[i].y * (size/100)
+            + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
         uictx.moveTo(UIButtons[1].avg.x + legOrigins[i].x, UIButtons[1].avg.y + legOrigins[i].y);
-        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[1].avg.x + spideyJump[i].x * (size/100), UIButtons[1].avg.y + spideyJump[i].y * (size/100))
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100))
         
-        uictx.moveTo(UIButtons[1].avg.x + spideyJump[i].x * (size/100), UIButtons[1].avg.y + spideyJump[i].y * (size/100));
-        uictx.strokeCirclePath(UIButtons[1].avg.x + spideyJump[i].x * (size/100), UIButtons[1].avg.y + spideyJump[i].y * (size/100), 2.5 * (size/100));
+        uictx.moveTo(UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100));
+        uictx.strokeCirclePath(UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100), 2.5 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
@@ -5964,17 +5969,17 @@ function drawMobileUI() {
     uictx.fillCirclePath(UIButtons[4].avg.x, UIButtons[4].avg.y, 10 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
-    for(let i=0;i<spideyLegs.length;i++){
-        const xanchor = UIButtons[4].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+    for(let i=0;i<OspideyLegs.length;i++){
+        const xanchor = UIButtons[4].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
-        const yanchor = UIButtons[4].avg.y - spideyLegs[i].y * (size/100)
-            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        const yanchor = UIButtons[4].avg.y - OspideyLegs[i].y * (size/100)
+            + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
         uictx.moveTo(UIButtons[4].avg.x + legOrigins[i].x, UIButtons[4].avg.y + legOrigins[i].y);
-        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[4].avg.x + spideyJump[i].x * (size/100), UIButtons[4].avg.y + spideyJump[i].y * (size/100));
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100));
 
-        uictx.moveTo(UIButtons[4].avg.x + spideyJump[i].x * (size/100), UIButtons[4].avg.y + spideyJump[i].y * (size/100));
-        uictx.strokeCirclePath(UIButtons[4].avg.x + spideyJump[i].x * (size/100), UIButtons[4].avg.y + spideyJump[i].y * (size/100), 2.5 * (size/100));
+        uictx.moveTo(UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100));
+        uictx.strokeCirclePath(UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100), 2.5 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
@@ -5990,17 +5995,17 @@ function drawMobileUI() {
     uictx.beginPath();
     uictx.moveTo(UIButtons[2].p1.x,UIButtons[2].p1.y);
     uictx.lineTo(UIButtons[2].avg.x,UIButtons[2].avg.y);
-    for(let i=0;i<spideyLegs.length;i++){
-        const xanchor = UIButtons[2].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+    for(let i=0;i<OspideyLegs.length;i++){
+        const xanchor = UIButtons[2].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
-        const yanchor = UIButtons[2].avg.y - spideyLegs[i].y * (size/100)
-            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        const yanchor = UIButtons[2].avg.y - OspideyLegs[i].y * (size/100)
+            + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
         uictx.moveTo(UIButtons[2].avg.x + legOrigins[i].x, UIButtons[2].avg.y + legOrigins[i].y);
-        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[2].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + spideyJump[i].y*0.75 * (size/100))
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100))
         
-        uictx.moveTo(UIButtons[2].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + spideyJump[i].y*0.75 * (size/100));
-        uictx.strokeCirclePath(UIButtons[2].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + spideyJump[i].y*0.75 * (size/100), 2 * (size/100));
+        uictx.moveTo(UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100));
+        uictx.strokeCirclePath(UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100), 2 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
@@ -6013,17 +6018,17 @@ function drawMobileUI() {
     uictx.beginPath();
     uictx.moveTo(UIButtons[5].p1.x,UIButtons[5].p1.y);
     uictx.lineTo(UIButtons[5].avg.x,UIButtons[5].avg.y);
-    for(let i=0;i<spideyLegs.length;i++){
-        const xanchor = UIButtons[5].avg.x + spideyLegs[i].x * (size/100) + (copySign(spideyLegs[i].x, legOrigins[i].x) 
+    for(let i=0;i<OspideyLegs.length;i++){
+        const xanchor = UIButtons[5].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
-        const yanchor = UIButtons[5].avg.y - spideyLegs[i].y * (size/100)
-            + (((spideyLegs[i].y) * (legOrigins[i].y/2)))
+        const yanchor = UIButtons[5].avg.y - OspideyLegs[i].y * (size/100)
+            + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
         uictx.moveTo(UIButtons[5].avg.x + legOrigins[i].x, UIButtons[5].avg.y + legOrigins[i].y);
-        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[5].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + spideyJump[i].y*0.75 * (size/100))
+        uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100))
         
-        uictx.moveTo(UIButtons[5].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + spideyJump[i].y*0.75 * (size/100));
-        uictx.strokeCirclePath(UIButtons[5].avg.x + spideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + spideyJump[i].y*0.75 * (size/100), 2 * (size/100));
+        uictx.moveTo(UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100));
+        uictx.strokeCirclePath(UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100), 2 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
