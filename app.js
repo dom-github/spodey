@@ -27,6 +27,10 @@ const uictx = UI.getContext("2d", { alpha: true });
 // const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offscreen.getContext("2d", { alpha: false });
 const bgctx = background.getContext("2d", { alpha: false });
 
+const cbackground = new OffscreenCanvas(window.innerWidth, window.innerHeight);
+const cbgctx = cbackground.getContext("2d", { alpha: false });
+
+
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
 
@@ -47,6 +51,10 @@ bgctx.width = window.innerWidth + bgOverflow*2;
 bgctx.height = window.innerHeight + bgOverflow*2;
 background.width = window.innerWidth + bgOverflow*2;
 background.height = window.innerHeight + bgOverflow*2;
+cbgctx.width = window.innerWidth + bgOverflow*2;
+cbgctx.height = window.innerHeight + bgOverflow*2;
+cbackground.width = window.innerWidth + bgOverflow*2;
+cbackground.height = window.innerHeight + bgOverflow*2;
 // if(!window.Worker){
 //     bgctx.width = window.innerWidth;
 //     bgctx.height = window.innerHeight;
@@ -88,6 +96,10 @@ function setDim() {
         bgctx.height = window.innerHeight + bgOverflow*2;
         background.width = window.innerWidth + bgOverflow*2;
         background.height = window.innerHeight + bgOverflow*2;
+        cbgctx.width = window.innerWidth + bgOverflow*2;
+        cbgctx.height = window.innerHeight + bgOverflow*2;
+        cbackground.width = window.innerWidth + bgOverflow*2;
+        cbackground.height = window.innerHeight + bgOverflow*2;
     //}
     
 
@@ -372,6 +384,7 @@ let spiScl = spideyRadius/100;
 let fliesEaten = 0;
 //lets make a spidey boi
 let spideyPos = {x: 0, y: 0}; // ??? This has to intersect w/ a collision?
+let cameraPos = {x: 0, y: 0}; 
 //'natural' leg values for anchor + neutral position
 let spideyLegs = [
     //Left leggies
@@ -492,11 +505,13 @@ function scaleWorld(news){
         context.scale(1/worldScale, 1/worldScale);
         //if(!window.Worker){
             bgctx.scale(1/worldScale, 1/worldScale);
+            cbgctx.scale(1/worldScale, 1/worldScale);
             //bgctx.scale(news, news);
         //}
         worldScale = Math.max(1, Math.min(8,news));
         context.scale(worldScale, worldScale);
         bgctx.scale(worldScale, worldScale);
+        cbgctx.scale(worldScale, worldScale);
         console.log(worldScale);
 
 }
@@ -1062,8 +1077,8 @@ function mouseMove(e){
     mousePosition.y += e.movementY * 0.5 * spiScl;
     mouseCursor.x += e.movementX * 0.5 * spiScl;
     mouseCursor.y += e.movementY * 0.5 * spiScl;
-    mouseCursor.x = Math.min(viewport.width*0.5 / worldScale, Math.max(-viewport.width*0.5 / worldScale, mouseCursor.x));
-    mouseCursor.y = Math.min(viewport.height*0.5 / worldScale, Math.max(-viewport.height*0.5 / worldScale, mouseCursor.y));
+    mouseCursor.x = Math.min((viewport.width*0.5 - (spideyPos.x - cameraPos.x)) / worldScale, Math.max(-(viewport.width*0.5 + (spideyPos.x - cameraPos.x)) / worldScale, mouseCursor.x));
+    mouseCursor.y = Math.min((viewport.height*0.5 - (spideyPos.y - cameraPos.y)) / worldScale, Math.max(-(viewport.height*0.5 + (spideyPos.y - cameraPos.y)) / worldScale, mouseCursor.y));
     mouseCursor.lastMove = lastTimestamp;
     mousedir = new Vector(e.movementX, e.movementY)
     cursorPos = new Vector(mouseCursor.x, mouseCursor.y)
@@ -1465,7 +1480,7 @@ for(let i=333;i<worldSize.width+333;i+=300){
         //     i+=40;
         } else if (type < 0.95) {
             i+=300;
-            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(8 * Math.random())), 40*Math.random()-20);
+            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(33 * Math.random())), 40*Math.random()-20);
             i+=300;
         } else {
             drawStopSign(i, ground + 40 * Math.random(), 1.2);
@@ -1494,21 +1509,23 @@ function mulberry32(a) {
     }
 }
 
+    // Create gradient
+    // let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
+    // //dusk-y FFC9D6 FFF3E5
+    // // sky.addColorStop(0, "#FFC9D6");
+    // // sky.addColorStop(0.5, "#FFF3E5");
+    
+    // sky.addColorStop(0, "#001749");
+    // sky.addColorStop(0.75, "#0252FF");
+    // sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
 function paintGround(id, length){
     
-    // Create gradient
-    let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
-    //dusk-y FFC9D6 FFF3E5
-    // sky.addColorStop(0, "#FFC9D6");
-    // sky.addColorStop(0.5, "#FFF3E5");
-    
-    sky.addColorStop(0, "#001749");
-    sky.addColorStop(0.75, "#0252FF");
-    sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
 
     // Fill with gradient
-    bgctx.fillStyle = sky;
-    bgctx.fillRect(0, 0, worldSize.width, worldSize.height);
+    //bgctx.fillStyle = sky;
+    bgctx.fillStyle = "639AFF";
+    
+    bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
 
     //background
     const box = areaBoxes[id]
@@ -1623,7 +1640,7 @@ function paintDesertGround(id, length){
 };
 
 function setAABB(id, len){
-    const min = {x: 0, y: 0}
+    const min = {x: 99999, y: 99999}
     const max = {x: 0, y: 0}
     //get the bounding box values
     for(let i=0; i<len; i++){
@@ -2580,21 +2597,21 @@ function spideyMove(leg) {
         
          const dist = Math.sqrt(x * x + y * y);
         //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y) //legMods[mirror].anim !== walking;
-        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 5))){}
+        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3))){}
         else if(Math.abs(speed.components[0]) > EPSILON
             || Math.abs(speed.components[1]) > EPSILON){
             if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
                 //only change rotation on "too close" legs 
-                legMods[leg].dx += (speed.components[0]*10) * spiScl + rotate.x - spideyLegs[leg].x;
-                legMods[leg].dy += (speed.components[1]*10) * spiScl + rotate.y - spideyLegs[leg].y;
+                legMods[leg].dx += (speed.components[0]*5) * spiScl + rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy += (speed.components[1]*5) * spiScl + rotate.y - spideyLegs[leg].y;
             } else {
             //console.log("Moving");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*10) * spiScl;
-            legMods[leg].dy = (speed.components[1]*10) * spiScl;
+            legMods[leg].dx = (speed.components[0]*5) * spiScl;
+            legMods[leg].dy = (speed.components[1]*5) * spiScl;
 
             }
         }
@@ -2799,9 +2816,9 @@ function spideyCollider() {
     };
 
     context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius);
-    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius * 0.66 * Math.min(1.33, spiScl));
+    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius * 0.66);
     context.strokeStyle = "#ee9999"
-    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius / 5);
+    context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius * Math.min(1.33, spiScl) / 3);
     context.strokeStyle = "#000000"
     }
 }
@@ -4786,6 +4803,10 @@ function move() {
     //move spidey pos
     spideyPos.x += xmov;
     spideyPos.y += ymov;
+    //camera boundaries 
+    cameraPos.x = Math.max(0, Math.min(spideyPos.x, worldSize.width - viewport.width*0.5));
+    cameraPos.y = Math.max(0, Math.min(spideyPos.y, worldSize.height - viewport.height*0.5));
+    
     //enforce pos 
     //spideyPos.x = Math.min(worldCanvas.width - radius + buffer,Math.max(radius - buffer, spideyPos.x))
     //spideyPos.y = Math.min(worldCanvas.height - radius + buffer,Math.max(radius - buffer, spideyPos.y))
@@ -4878,20 +4899,59 @@ function drawEnemies(){
 //const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 // const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 // const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+
+//new:
+//check workers are valid
+//compare dist to bgoffset 
+//
 const bgOffset = {x: 0, y: 0}
+const drawBuffer = [];
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
-    const overdraw = (bgOverflow - 64) / worldScale;
-    const overX = spideyPos.x - bgOffset.x
-    const overY = spideyPos.y - bgOffset.y
+    const overdraw = (bgOverflow-16) / worldScale;
+    // if (spideyPos.x - cameraPos.x !== 0) bgOffset.x = cameraPos.x;
+    // if (spideyPos.y - cameraPos.y !== 0) bgOffset.y = cameraPos.y;
+    const overX =  cameraPos.x - bgOffset.x
+    const overY = cameraPos.y - bgOffset.y
     // const w = background.width;
     // const h = background.height;
+    if (drawBuffer.length > 0){
+        cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
+        bgctx.save();
+        bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
+        for(let i=0; i<16 && drawBuffer.length > 0; i++){
+            const x = drawBuffer.pop()
+            console.log("drawing", x.type)
+            //animate
+            switch (x.type){
+                case rockMed:
+                    paintRockMed(x.id, x.length); 
+                    break
+                case stopSign:
+                    paintStopSign(x.id, x.length);  
+                    break
+                case tree:
+                    paintTree(x.id, x.length, x.circID, x.circLen);  
+                    break
+                case cactus:
+                    paintCactus(x.id, x.length, x.circID, x.circLen);  
+                    break
+                case flower:
+                    paintFlower(x.id, x.length, x.circID, x.circLen);  
+                    break
+            }
+        }
+        bgctx.restore();
+        //bgctx.drawImage(cbackground, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
+        bgctx.drawImage(cbackground, bgOverflow, bgOverflow, viewport.width, viewport.height, bgOverflow/worldScale, bgOverflow/worldScale, viewport.width / worldScale, viewport.height / worldScale);
+    }
     if(
         (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
     ) {
+        //console.log("Overdraw", overX, overY, bgXoffset, bgYoffset)
         if (window.Worker && 0) {
 
-                console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
+                //console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
                 objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}]); 
             
             // //draw full bg
@@ -4921,66 +4981,105 @@ function drawObjects(bgXoffset, bgYoffset){
             bgOffset.y = spideyPos.y;
         } else {
         
-        // const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
-        // const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+           
 
-        bgOffset.x = spideyPos.x;
-        bgOffset.y = spideyPos.y;
-        bgctx.save();
-        bgctx.translate(-bgXoffset, -bgYoffset);
-        
-        //confine clip region to overdraw area (offscreen)
-        // const startX = overdrawX >= 0 ? bgXoffset : bgXoffset + bgctx.width*0.5;
-        // const startY = overdrawY >= 0 ? bgYoffset : bgYoffset + bgctx.height*0.5;
-        // bgctx.beginPath();
-        // bgctx.rect(startX, startY, overdrawX, bgctx.height);
-        // bgctx.rect(startX, startY, bgctx.width, overdrawY);
-        // bgctx.clip();
+            const bgw = background.width;
+            const bgh = background.height;
 
-    // const overdraw = bgOverflow/worldScale;
-    // const overX = spideyPos.x - bgOffset.x
-    // const overY = spideyPos.y - bgOffset.y
-    // if(
-    //     (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
-    // ) {
-    //     console.log(bgctx.width,bgctx.height,"OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-    //     bgOffset.x = spideyPos.x;
-    //     bgOffset.y = spideyPos.y;
-        scnObj.forEach((x) => {
-            if(x.type === ground){
-                    //          
-                    paintGround(x.id, x.length);  
-                }
-            if(
-                x.max.x > spideyPos.x - viewport.width// - overdraw
-                && x.min.x < spideyPos.x + viewport.width// + overdraw
-                && x.max.y > spideyPos.y - viewport.height// - overdraw
-                && x.min.y < spideyPos.y + viewport.height// + overdraw
-            ){
-                //animate
-                switch (x.type){
-                    case rockMed:
-                        paintRockMed(x.id, x.length); 
-                        break
-                    case stopSign:
-                        paintStopSign(x.id, x.length);  
-                        break
-                    case tree:
-                        paintTree(x.id, x.length, x.circID, x.circLen);  
-                        break
-                    case cactus:
-                        paintCactus(x.id, x.length, x.circID, x.circLen);  
-                        break
-                    case flower:
-                        paintFlower(x.id, x.length, x.circID, x.circLen);  
-                        break
-                }
-            }
-        })
+            // const overdrawX = (spideyPos.x > viewport.width * 0.5 && spideyPos.x < worldSize.width - viewport.width * 0.5) ? Math.round(overX) : 0;
+            
+            // const overdrawY = (spideyPos.y > viewport.height * 0.5 && spideyPos.y < worldSize.height - viewport.height * 0.5) ? Math.round(overY) : 0;
+
+            bgctx.drawImage(background, Math.round(overX * worldScale), Math.round(overY * worldScale), bgw * worldScale, bgh * worldScale, 0, 0, bgw, bgh);
+            //bgctx.fillRect(0,0,bgw, bgh);
+            bgctx.fillStyle = "#639AFF"
+            console.log("CIGRET", bgOverflow, worldScale, overX, overY)
+            //top bar
+            if (overY < 0) bgctx.fillRect(0,0,bgw/worldScale, Math.max(Math.abs(Math.round(overY * worldScale))/worldScale,bgOverflow/worldScale));
+            //left bar 
+            if (overX < 0) bgctx.fillRect(0,0,Math.max(Math.round(overX * worldScale)/worldScale,bgOverflow/worldScale), bgh/worldScale);
+            //bottom bar
+            if (overY > 0) bgctx.fillRect(0,bgh/worldScale-bgOverflow/worldScale, bgw/worldScale, Math.max(Math.round(overY * worldScale)/worldScale),bgOverflow/worldScale);
+            //right bar
+            if (overX > 0) bgctx.fillRect(bgw/worldScale-bgOverflow/worldScale, 0, Math.max(Math.round(overX * worldScale)/worldScale,bgOverflow/worldScale), bgh/worldScale);        
         
-        bgctx.restore();
-    //}
-    }
+            //draw whole bg
+            if (Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
+                bgctx.save();
+                bgctx.translate(-bgXoffset, -bgYoffset);
+                
+                scnObj.forEach((x) => {
+                if(x.max.x > spideyPos.x - viewport.width
+                    && x.min.x < spideyPos.x + viewport.width
+                    && x.max.y > spideyPos.y - viewport.height
+                    && x.min.y < spideyPos.y + viewport.height
+                    ){
+                    console.log("DRAWBG")
+                    if(x.type === ground){
+                        //          
+                        paintGround(x.id, x.length);  
+                    }   
+                    switch (x.type){
+                        case rockMed:
+                            paintRockMed(x.id, x.length); 
+                            break
+                        case stopSign:
+                            paintStopSign(x.id, x.length);  
+                            break
+                        case tree:
+                            paintTree(x.id, x.length, x.circID, x.circLen);  
+                            break
+                        case cactus:
+                            paintCactus(x.id, x.length, x.circID, x.circLen);  
+                            break
+                        case flower:
+                            paintFlower(x.id, x.length, x.circID, x.circLen);  
+                            break
+                    }
+                }
+            })
+            bgctx.restore();
+        } else {
+            scnObj.forEach((x) => {
+                if(
+                    //draw + X overflow
+                    (overX > 0 && 
+                    (x.max.x > cameraPos.x + viewport.width/worldScale *0.5
+                    && x.min.x < cameraPos.x + viewport.width/worldScale *0.5 + bgOverflow/worldScale
+                    && x.max.y > cameraPos.y - viewport.height/worldScale *0.5 - bgOverflow/worldScale
+                    && x.min.y < cameraPos.y + viewport.height/worldScale *0.5 + bgOverflow/worldScale
+                    ))
+                    || //draw + Y overflow
+                    (overY > 0 && 
+                    (x.max.x > cameraPos.x - viewport.width/worldScale * 0.5 - bgOverflow/worldScale
+                    && x.min.x < cameraPos.x + viewport.width/worldScale * 0.5 + bgOverflow/worldScale
+                    && x.max.y > cameraPos.y + viewport.height/worldScale * 0.5
+                    && x.min.y < cameraPos.y + viewport.height/worldScale * 0.5 + bgOverflow/worldScale
+                    ))
+                    || //draw - X overflow
+                    (overX < 0 && 
+                    (x.max.x > cameraPos.x - viewport.width/worldScale * 0.5 - bgOverflow/worldScale
+                    && x.min.x < cameraPos.x - viewport.width/worldScale * 0.5
+                    && x.max.y > cameraPos.y - viewport.height/worldScale * 0.5 - bgOverflow/worldScale
+                    && x.min.y < cameraPos.y + viewport.height/worldScale * 0.5 + bgOverflow/worldScale
+                    ))
+                    || //draw - Y overflow
+                    (overY < 0 && 
+                    (x.max.x > cameraPos.x - viewport.width/worldScale * 0.5 - bgOverflow/worldScale
+                    && x.min.x < cameraPos.x + viewport.width/worldScale * 0.5 + bgOverflow/worldScale
+                    && x.max.y > cameraPos.y - viewport.height/worldScale * 0.5 - bgOverflow/worldScale
+                    && x.min.y < cameraPos.y - viewport.height/worldScale *0.5
+                    ))
+                ){
+                    drawBuffer.push(x);
+                }
+            })
+            
+        }
+            //bgctx.restore();
+            bgOffset.x = cameraPos.x;
+            bgOffset.y = cameraPos.y;
+        }
     }
 }
 
@@ -5383,16 +5482,19 @@ function update(timestamp) {
             gravity();
             processAI();
 
+        cameraPos.x = Math.max(viewport.width*0.5 / worldScale, Math.min(spideyPos.x, worldSize.width - viewport.width*0.5 / worldScale));
+        cameraPos.y = Math.max(viewport.height*0.5 / worldScale, Math.min(spideyPos.y, worldSize.height - viewport.height*0.5 / worldScale));
+
         const w = viewport.width;
         const h = viewport.height; 
         const bgw = canvas.width / worldScale;
         const bgh = canvas.height / worldScale;
 
-        const bgXoffset = Math.max(0, Math.min((spideyPos.x + (bgw*0.5) - bgw), worldSize.width - bgw));
-        const bgYoffset = Math.max(0, Math.min((spideyPos.y + (bgh*0.5) - bgh), worldSize.height - bgh));
+        const bgXoffset = Math.max(0, Math.min(spideyPos.x - bgw*0.5, worldSize.width - bgw));
+        const bgYoffset = Math.max(0, Math.min(spideyPos.y - bgh*0.5, worldSize.height - bgh));
         
-        const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x + (bgw*0.5) - bgw), worldSize.width - bgw)));
-        const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y + (bgh*0.5) - bgh), worldSize.height - bgh)));
+        const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x - bgw*0.5), worldSize.width - bgw)));
+        const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y - bgh*0.5), worldSize.height - bgh)));
         
         // context.clearRect(0,0,viewport.width,viewport.height);
         // vctx.clearRect(0,0,viewport.width,viewport.height);
@@ -5753,7 +5855,7 @@ function newGame(){
         drawMobileUI();
     }
     scaleSpidey(42);
-    scaleWorld(3);
+    scaleWorld(4);
     startgame = false;
     skipMouseInput = true;
     initScene();
