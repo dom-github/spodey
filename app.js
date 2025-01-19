@@ -1510,20 +1510,20 @@ function mulberry32(a) {
 }
 
     // Create gradient
-    // let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
-    // //dusk-y FFC9D6 FFF3E5
-    // // sky.addColorStop(0, "#FFC9D6");
-    // // sky.addColorStop(0.5, "#FFF3E5");
+    let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
+    //dusk-y FFC9D6 FFF3E5
+    // sky.addColorStop(0, "#FFC9D6");
+    // sky.addColorStop(0.5, "#FFF3E5");
     
-    // sky.addColorStop(0, "#001749");
-    // sky.addColorStop(0.75, "#0252FF");
-    // sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
+    sky.addColorStop(0, "#001749");
+    sky.addColorStop(0.75, "#0252FF");
+    sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
 function paintGround(id, length){
     
 
     // Fill with gradient
-    //bgctx.fillStyle = sky;
-    bgctx.fillStyle = "639AFF";
+    bgctx.fillStyle = sky;
+    // bgctx.fillStyle = "639AFF";
     
     bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
 
@@ -1578,14 +1578,14 @@ function paintGround(id, length){
 function paintDesertGround(id, length){
     
     // Create gradient
-    let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
-    //dusk-y FFC9D6 FFF3E5
-    // sky.addColorStop(0, "#FFC9D6");
-    // sky.addColorStop(0.5, "#FFF3E5");
+    // let sky = bgctx.createLinearGradient(0, 0, 0, worldSize.height);
+    // //dusk-y FFC9D6 FFF3E5
+    // // sky.addColorStop(0, "#FFC9D6");
+    // // sky.addColorStop(0.5, "#FFF3E5");
     
-    sky.addColorStop(0, "#001749");
-    sky.addColorStop(0.75, "#0252FF");
-    sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
+    // sky.addColorStop(0, "#001749");
+    // sky.addColorStop(0.75, "#0252FF");
+    // sky.addColorStop(1.0, "#C9E6FF"); //#93CBFF
 
     // Fill with gradient
     bgctx.fillStyle = sky;
@@ -2080,11 +2080,12 @@ function drawTree(x, y, s, seg, ang){
             }
 }
 
+    let bark = bgctx.createLinearGradient(0,worldSize.height,0,worldSize.height - 2500)
+    bark.addColorStop(0,"#563B27")
+    bark.addColorStop(1,"#7A6252")
 function paintTree(id, len){
-    // let bark = bgctx.createLinearGradient(boundaryColliders[id].p1.x-50,0,boundaryColliders[id].p1.x+50,0)
-    // bark.addColorStop(0,"#563B27")
-    // bark.addColorStop(1,"#7A6252")
-    bgctx.fillStyle = "#775137"; 
+    //bgctx.fillStyle = "#775137"; 
+    bgctx.fillStyle = bark; 
     bgctx.strokeStyle = "#3A2B22";
     bgctx.lineWidth = 2;
     //bgctx.lineCap= "round";
@@ -4780,7 +4781,7 @@ let acceleration = new Vector(0, 0)
 function setSpeed(x, y) {
     //xmov = Math.min(1, Math.max( -1, x));
     //ymov = Math.min(1, Math.max( -1, y));
-    acceleration = acceleration.add(new Vector((x / perfectFrameTime) * deltaTime, (y / perfectFrameTime) * deltaTime))
+    acceleration = acceleration.add(new Vector((x / 10) * deltaTime, (y / 10) * deltaTime))
     velocity = velocity.add(acceleration);
     speed = velocity;
     // console.log(acceleration.components, velocity.components)
@@ -4908,7 +4909,7 @@ const bgOffset = {x: 0, y: 0}
 const drawBuffer = [];
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
-    const overdraw = (bgOverflow-16) / worldScale;
+    const overdraw = (bgOverflow) / worldScale;
     // if (spideyPos.x - cameraPos.x !== 0) bgOffset.x = cameraPos.x;
     // if (spideyPos.y - cameraPos.y !== 0) bgOffset.y = cameraPos.y;
     const overX =  cameraPos.x - bgOffset.x
@@ -4920,10 +4921,13 @@ function drawObjects(bgXoffset, bgYoffset){
         bgctx.save();
         bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
         for(let i=0; i<16 && drawBuffer.length > 0; i++){
-            const x = drawBuffer.pop()
+            const x = drawBuffer.shift()
             console.log("drawing", x.type)
             //animate
             switch (x.type){
+                case ground:
+                    //paintGround(x.id, x.length); 
+                    break
                 case rockMed:
                     paintRockMed(x.id, x.length); 
                     break
@@ -4946,7 +4950,7 @@ function drawObjects(bgXoffset, bgYoffset){
         bgctx.drawImage(cbackground, bgOverflow, bgOverflow, viewport.width, viewport.height, bgOverflow/worldScale, bgOverflow/worldScale, viewport.width / worldScale, viewport.height / worldScale);
     }
     if(
-        (Math.abs(overX) > overdraw || Math.abs(overY) > overdraw)
+        (Math.abs(overX)*worldScale > overdraw || Math.abs(overY)*worldScale > overdraw)
     ) {
         //console.log("Overdraw", overX, overY, bgXoffset, bgYoffset)
         if (window.Worker && 0) {
@@ -4981,28 +4985,6 @@ function drawObjects(bgXoffset, bgYoffset){
             bgOffset.y = spideyPos.y;
         } else {
         
-           
-
-            const bgw = background.width;
-            const bgh = background.height;
-
-            // const overdrawX = (spideyPos.x > viewport.width * 0.5 && spideyPos.x < worldSize.width - viewport.width * 0.5) ? Math.round(overX) : 0;
-            
-            // const overdrawY = (spideyPos.y > viewport.height * 0.5 && spideyPos.y < worldSize.height - viewport.height * 0.5) ? Math.round(overY) : 0;
-
-            bgctx.drawImage(background, Math.round(overX * worldScale), Math.round(overY * worldScale), bgw * worldScale, bgh * worldScale, 0, 0, bgw, bgh);
-            //bgctx.fillRect(0,0,bgw, bgh);
-            bgctx.fillStyle = "#639AFF"
-            console.log("CIGRET", bgOverflow, worldScale, overX, overY)
-            //top bar
-            if (overY < 0) bgctx.fillRect(0,0,bgw/worldScale, Math.max(Math.abs(Math.round(overY * worldScale))/worldScale,bgOverflow/worldScale));
-            //left bar 
-            if (overX < 0) bgctx.fillRect(0,0,Math.max(Math.round(overX * worldScale)/worldScale,bgOverflow/worldScale), bgh/worldScale);
-            //bottom bar
-            if (overY > 0) bgctx.fillRect(0,bgh/worldScale-bgOverflow/worldScale, bgw/worldScale, Math.max(Math.round(overY * worldScale)/worldScale),bgOverflow/worldScale);
-            //right bar
-            if (overX > 0) bgctx.fillRect(bgw/worldScale-bgOverflow/worldScale, 0, Math.max(Math.round(overX * worldScale)/worldScale,bgOverflow/worldScale), bgh/worldScale);        
-        
             //draw whole bg
             if (Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
                 bgctx.save();
@@ -5015,11 +4997,10 @@ function drawObjects(bgXoffset, bgYoffset){
                     && x.min.y < spideyPos.y + viewport.height
                     ){
                     console.log("DRAWBG")
-                    if(x.type === ground){
-                        //          
-                        paintGround(x.id, x.length);  
-                    }   
                     switch (x.type){
+                        case ground:
+                            paintGround(x.id, x.length); 
+                            break
                         case rockMed:
                             paintRockMed(x.id, x.length); 
                             break
@@ -5040,6 +5021,29 @@ function drawObjects(bgXoffset, bgYoffset){
             })
             bgctx.restore();
         } else {
+            const bgw = background.width;
+            const bgh = background.height;
+
+            // const overdrawX = (spideyPos.x > viewport.width * 0.5 && spideyPos.x < worldSize.width - viewport.width * 0.5) ? Math.round(overX) : 0;
+            
+            // const overdrawY = (spideyPos.y > viewport.height * 0.5 && spideyPos.y < worldSize.height - viewport.height * 0.5) ? Math.round(overY) : 0;
+
+            bgctx.drawImage(background, Math.round(overX * worldScale), Math.round(overY * worldScale), bgw * worldScale, bgh * worldScale, 0, 0, bgw, bgh);
+            //bgctx.fillRect(0,0,bgw, bgh);
+
+            bgctx.save();
+            bgctx.translate(-bgXoffset, -bgYoffset);
+            bgctx.fillStyle = sky;
+            //top bar
+            if (overY < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgw/worldScale, bgOverflow/worldScale);
+            //left bar 
+            if (overX < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgOverflow/worldScale, bgh/worldScale);
+            //bottom bar
+            if (overY > 0) bgctx.fillRect(bgXoffset, bgYoffset+bgh/worldScale-bgOverflow/worldScale, bgw/worldScale, bgOverflow/worldScale);
+            //right bar
+            if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-bgOverflow/worldScale, bgYoffset, bgOverflow/worldScale, bgh/worldScale);        
+        
+            bgctx.restore();
             scnObj.forEach((x) => {
                 if(
                     //draw + X overflow
@@ -5246,13 +5250,13 @@ function update(timestamp) {
         const timer = step >= viewport.height; 
         
         const smooth = easeOutExpo((viewport.height / step));
-        let sky = uictx.createLinearGradient(0, 0, 0, viewport.height*2);
+        let uisky = uictx.createLinearGradient(0, 0, 0, viewport.height*2);
         let invsky = uictx.createLinearGradient(0, 0, 0, viewport.height);
         let sky2 = context.createLinearGradient(0, (-viewport.height*2 + step), 0, (viewport.height*2 + step));
         
     //sky.addColorStop(0, "#001749");
-    sky.addColorStop(0, "#0252FF");
-    sky.addColorStop(1, "#C9E6FF");
+    uisky.addColorStop(0, "#0252FF");
+    uisky.addColorStop(1, "#C9E6FF");
     sky2.addColorStop(0, "#0252FF");
     sky2.addColorStop(1, "#C9E6FF"); //#93CBFF
 
@@ -5262,7 +5266,7 @@ function update(timestamp) {
         // sky2.addColorStop(1.0, "#96E6FF"); //#93CBFF
 
         // Fill with gradient
-        uictx.fillStyle = sky;
+        uictx.fillStyle = uisky;
         //uictx.fillStyle = "#2DCEFF";
         uictx.fillRect(0,0,w,h)
         uictx.fillStyle = "#ffffff";
