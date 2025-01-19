@@ -4560,8 +4560,10 @@ function drawWebs(){
         context.lineWidth = 0.5 + spiScl;
         context.lineCap = "butt";
         context.strokeStyle = "#ffffff";
+        context.fillStyle = "#ffffff";
         // context.lineCap = "round";
         if (jactive) context.strokeStyle = "#dddddd";
+        context.fillCircle(x.p1.x, x.p1.y, 1);
         context.beginPath();
         context.moveTo(x.p1.x, x.p1.y);
         // const animate = (lastTimestamp%3000)/1500; 
@@ -4730,6 +4732,7 @@ function drawWebs(){
         }
         context.lineTo(x.p2.x, x.p2.y);
         context.stroke();
+        context.fillCircle(x.p2.x, x.p2.y, 1);
         
         //context.lineWidth = 1;
     })
@@ -4758,17 +4761,17 @@ function drawWebs(){
     if(layWeb) {
         context.lineWidth = 0.5 + spiScl; 
         context.strokeStyle = "#ffffff";
+        context.fillStyle = "#ffffff";
+        context.fillCircle(webOrigin.x, webOrigin.y, 1);
         if (jactive) context.strokeStyle = "#dddddd";
         context.beginPath();
         context.moveTo(webOrigin.x, webOrigin.y);
         holdWeb > -1 && !(falling && shiftPressed) ? context.lineTo(spideyPos.x + spideyLegs[holdWeb].x + legMods[holdWeb].jx, spideyPos.y + spideyLegs[holdWeb].y + legMods[holdWeb].jy) : context.lineTo(spideyPos.x, spideyPos.y);
         context.stroke();
         
-
-        context.strokeStyle = "#000000";
-        context.lineWidth = 1;
     }
     context.strokeStyle = "#000000";
+    context.fillStyle = "#000000";
     context.lineWidth = 1;
 }
 
@@ -4909,7 +4912,7 @@ const bgOffset = {x: 0, y: 0}
 const drawBuffer = [];
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
-    const overdraw = (bgOverflow) / worldScale;
+    const overdraw = bgOverflow-(16*worldScale);
     // if (spideyPos.x - cameraPos.x !== 0) bgOffset.x = cameraPos.x;
     // if (spideyPos.y - cameraPos.y !== 0) bgOffset.y = cameraPos.y;
     const overX =  cameraPos.x - bgOffset.x
@@ -4920,7 +4923,7 @@ function drawObjects(bgXoffset, bgYoffset){
         cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
         bgctx.save();
         bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
-        for(let i=0; i<16 && drawBuffer.length > 0; i++){
+        for(let i=0; i<8 && drawBuffer.length > 0; i++){
             const x = drawBuffer.shift()
             console.log("drawing", x.type)
             //animate
