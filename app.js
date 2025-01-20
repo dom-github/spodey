@@ -1521,11 +1521,11 @@ function mulberry32(a) {
 function paintGround(id, length){
     
 
-    // Fill with gradient
-    bgctx.fillStyle = sky;
-    // bgctx.fillStyle = "639AFF";
+    // // Fill with gradient
+    // bgctx.fillStyle = sky;
+    // // bgctx.fillStyle = "639AFF";
     
-    bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
+    // bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
 
     //background
     const box = areaBoxes[id]
@@ -4929,7 +4929,7 @@ function drawObjects(bgXoffset, bgYoffset){
             //animate
             switch (x.type){
                 case ground:
-                    //paintGround(x.id, x.length); 
+                    paintGround(x.id, x.length); 
                     break
                 case rockMed:
                     paintRockMed(x.id, x.length); 
@@ -4993,6 +4993,11 @@ function drawObjects(bgXoffset, bgYoffset){
                 bgctx.save();
                 bgctx.translate(-bgXoffset, -bgYoffset);
                 
+                // Fill with gradient
+                bgctx.fillStyle = sky;
+                // bgctx.fillStyle = "639AFF";
+
+                bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
                 scnObj.forEach((x) => {
                 if(x.max.x > spideyPos.x - viewport.width
                     && x.min.x < spideyPos.x + viewport.width
