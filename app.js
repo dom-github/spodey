@@ -33,8 +33,9 @@ const cbgctx = cbackground.getContext("2d", { alpha: false });
 
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
+console.log("conk",navigator.hardwareConcurrency)
 
-const bgOverflow = 256;
+const bgOverflow = 512;
 //copy
 // const overflowCopy = new OffscreenCanvas(viewport.width, viewport.height)
 //horizontal
@@ -1473,14 +1474,18 @@ for(let i=333;i<worldSize.width+333;i+=300){
             //drawRockMed(i, ground, scale);
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
-        // } else if (type < 0.75) {
-        //     i+=40;
-        //     drawFlower(i, ground, scale);
-        //     //drawCactus(i, ground + 150 * Math.random(), 1);
-        //     i+=40;
-        } else if (type < 0.95) {
+        } else if (type < 0.75) {
+            i+=40;
+            drawCactus(i, ground + 150 * Math.random(), 1);
+            i+=40;
+        } else if (type < 0.80) {
+            i+=10;
+            drawFlower(i, ground, scale * 0.10);
+            //drawCactus(i, ground + 150 * Math.random(), 1);
+            i+=10;
+        } else if (type < 0.97) {
             i+=300;
-            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(33 * Math.random())), 40*Math.random()-20);
+            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(45 * Math.random())), 40*Math.random()-20);
             i+=300;
         } else {
             drawStopSign(i, ground + 40 * Math.random(), 1.2);
@@ -2281,7 +2286,7 @@ function paintTree(id, len){
 
         const ab = setAABB(id, 10);
 
-        scnObj.push({id: id, length: 12, circID: circID, circLen: 3, type: cactus, min: ab.min, max: ab.max});
+        scnObj.push({id: id, length: 12, circID: circID, circLen: 3, type: cactus, min: {x: ab.min.x, y: ab.min.y - widthAbs}, max: ab.max});
 
         }
     // ex. 
@@ -4903,16 +4908,37 @@ function drawEnemies(){
 //const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 // const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
 // const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-
+function paintObjs(x){
+    switch (x.type){
+        case ground:
+            paintGround(x.id, x.length); 
+            break
+        case rockMed:
+            paintRockMed(x.id, x.length); 
+            break
+        case stopSign:
+            paintStopSign(x.id, x.length);  
+            break
+        case tree:
+            paintTree(x.id, x.length, x.circID, x.circLen);  
+            break
+        case cactus:
+            paintCactus(x.id, x.length, x.circID, x.circLen);  
+            break
+        case flower:
+            paintFlower(x.id, x.length, x.circID, x.circLen);  
+            break
+    }}
 //new:
 //check workers are valid
 //compare dist to bgoffset 
 //
+
 const bgOffset = {x: 0, y: 0}
 const drawBuffer = [];
 //.type, .x, .y, .anim, .start, .dx, dy
 function drawObjects(bgXoffset, bgYoffset){
-    const overdraw = bgOverflow-(16*worldScale);
+    const overdraw = bgOverflow * 0.5;
     // if (spideyPos.x - cameraPos.x !== 0) bgOffset.x = cameraPos.x;
     // if (spideyPos.y - cameraPos.y !== 0) bgOffset.y = cameraPos.y;
     const overX =  cameraPos.x - bgOffset.x
@@ -4923,34 +4949,23 @@ function drawObjects(bgXoffset, bgYoffset){
         cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
         bgctx.save();
         bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
-        for(let i=0; i<8 && drawBuffer.length > 0; i++){
-            const x = drawBuffer.shift()
-            console.log("drawing", x.type)
+        for(let i=0; drawBuffer.length > 0 && i<8; i++){
+            const x = drawBuffer.shift();
+            //console.log("drawing", x.type)
             //animate
-            switch (x.type){
-                case ground:
-                    paintGround(x.id, x.length); 
-                    break
-                case rockMed:
-                    paintRockMed(x.id, x.length); 
-                    break
-                case stopSign:
-                    paintStopSign(x.id, x.length);  
-                    break
-                case tree:
-                    paintTree(x.id, x.length, x.circID, x.circLen);  
-                    break
-                case cactus:
-                    paintCactus(x.id, x.length, x.circID, x.circLen);  
-                    break
-                case flower:
-                    paintFlower(x.id, x.length, x.circID, x.circLen);  
-                    break
-            }
+            paintObjs(x);
         }
         bgctx.restore();
         //bgctx.drawImage(cbackground, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
-        bgctx.drawImage(cbackground, bgOverflow, bgOverflow, viewport.width, viewport.height, bgOverflow/worldScale, bgOverflow/worldScale, viewport.width / worldScale, viewport.height / worldScale);
+        bgctx.drawImage(cbackground, 
+            //source XY
+            bgOverflow-Math.abs((overX)*worldScale), bgOverflow-Math.abs((overY)*worldScale),
+            //source WH
+            viewport.width+Math.abs((overX)*worldScale), viewport.height+Math.abs((overY)*worldScale),
+            //dest XY 
+            (bgOverflow/worldScale)-Math.abs((overX)), (bgOverflow/worldScale)-Math.abs((overY)), 
+            //dest WH
+            (viewport.width / worldScale)+Math.abs((overX)), (viewport.height / worldScale)+Math.abs((overY)));
     }
     if(
         (Math.abs(overX)*worldScale > overdraw || Math.abs(overY)*worldScale > overdraw)
@@ -5004,27 +5019,8 @@ function drawObjects(bgXoffset, bgYoffset){
                     && x.max.y > spideyPos.y - viewport.height
                     && x.min.y < spideyPos.y + viewport.height
                     ){
-                    console.log("DRAWBG")
-                    switch (x.type){
-                        case ground:
-                            paintGround(x.id, x.length); 
-                            break
-                        case rockMed:
-                            paintRockMed(x.id, x.length); 
-                            break
-                        case stopSign:
-                            paintStopSign(x.id, x.length);  
-                            break
-                        case tree:
-                            paintTree(x.id, x.length, x.circID, x.circLen);  
-                            break
-                        case cactus:
-                            paintCactus(x.id, x.length, x.circID, x.circLen);  
-                            break
-                        case flower:
-                            paintFlower(x.id, x.length, x.circID, x.circLen);  
-                            break
-                    }
+                    //console.log("DRAWBG")
+                    paintObjs(x);
                 }
             })
             bgctx.restore();
@@ -5037,26 +5033,34 @@ function drawObjects(bgXoffset, bgYoffset){
             // const overdrawY = (spideyPos.y > viewport.height * 0.5 && spideyPos.y < worldSize.height - viewport.height * 0.5) ? Math.round(overY) : 0;
 
             bgctx.drawImage(background, Math.round(overX * worldScale), Math.round(overY * worldScale), bgw * worldScale, bgh * worldScale, 0, 0, bgw, bgh);
+            //cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
             //bgctx.fillRect(0,0,bgw, bgh);
 
             bgctx.save();
             bgctx.translate(-bgXoffset, -bgYoffset);
             bgctx.fillStyle = sky;
             //top bar
-            if (overY < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgw/worldScale, bgOverflow/worldScale);
-            //left bar 
-            if (overX < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgOverflow/worldScale, bgh/worldScale);
+            if (overY < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgw/worldScale, Math.ceil(Math.abs(overY)));
+            //left bar
+            if (overX < 0) bgctx.fillRect(bgXoffset, bgYoffset,Math.ceil(Math.abs(overX)), bgh/worldScale);
             //bottom bar
-            if (overY > 0) bgctx.fillRect(bgXoffset, bgYoffset+bgh/worldScale-bgOverflow/worldScale, bgw/worldScale, bgOverflow/worldScale);
+            if (overY > 0) bgctx.fillRect(bgXoffset, bgYoffset+bgh/worldScale-Math.ceil(Math.abs(overY)), bgw/worldScale, bgOverflow);
             //right bar
-            if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-bgOverflow/worldScale, bgYoffset, bgOverflow/worldScale, bgh/worldScale);        
-        
+            if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-Math.ceil(Math.abs(overX)), bgYoffset, bgOverflow, bgh/worldScale); 
+
+            //clear anything that hasnt been drawn in the buffer yet :(
+            drawBuffer.forEach((x, id)=> {
+                //console.log("Clearing... ", id)
+                paintObjs(x);
+            });
+            drawBuffer.length = 0;
+            //paintGround(0, 1); 
             bgctx.restore();
             scnObj.forEach((x) => {
                 if(
                     //draw + X overflow
                     (overX > 0 && 
-                    (x.max.x > cameraPos.x + viewport.width/worldScale *0.5
+                    (x.max.x > cameraPos.x + viewport.width/worldScale *0.5 + overdraw/worldScale
                     && x.min.x < cameraPos.x + viewport.width/worldScale *0.5 + bgOverflow/worldScale
                     && x.max.y > cameraPos.y - viewport.height/worldScale *0.5 - bgOverflow/worldScale
                     && x.min.y < cameraPos.y + viewport.height/worldScale *0.5 + bgOverflow/worldScale
@@ -5065,13 +5069,13 @@ function drawObjects(bgXoffset, bgYoffset){
                     (overY > 0 && 
                     (x.max.x > cameraPos.x - viewport.width/worldScale * 0.5 - bgOverflow/worldScale
                     && x.min.x < cameraPos.x + viewport.width/worldScale * 0.5 + bgOverflow/worldScale
-                    && x.max.y > cameraPos.y + viewport.height/worldScale * 0.5
+                    && x.max.y > cameraPos.y + viewport.height/worldScale * 0.5 + overdraw/worldScale
                     && x.min.y < cameraPos.y + viewport.height/worldScale * 0.5 + bgOverflow/worldScale
                     ))
                     || //draw - X overflow
                     (overX < 0 && 
                     (x.max.x > cameraPos.x - viewport.width/worldScale * 0.5 - bgOverflow/worldScale
-                    && x.min.x < cameraPos.x - viewport.width/worldScale * 0.5
+                    && x.min.x < cameraPos.x - viewport.width/worldScale * 0.5 - overdraw/worldScale
                     && x.max.y > cameraPos.y - viewport.height/worldScale * 0.5 - bgOverflow/worldScale
                     && x.min.y < cameraPos.y + viewport.height/worldScale * 0.5 + bgOverflow/worldScale
                     ))
@@ -5080,7 +5084,7 @@ function drawObjects(bgXoffset, bgYoffset){
                     (x.max.x > cameraPos.x - viewport.width/worldScale * 0.5 - bgOverflow/worldScale
                     && x.min.x < cameraPos.x + viewport.width/worldScale * 0.5 + bgOverflow/worldScale
                     && x.max.y > cameraPos.y - viewport.height/worldScale * 0.5 - bgOverflow/worldScale
-                    && x.min.y < cameraPos.y - viewport.height/worldScale *0.5
+                    && x.min.y < cameraPos.y - viewport.height/worldScale *0.5 - overdraw/worldScale
                     ))
                 ){
                     drawBuffer.push(x);
@@ -5623,7 +5627,7 @@ function processInput () {
                     speedx = cursorPos.components[0];
                     speedy = cursorPos.components[1] - grav;
                 }
-                setSpeed(speedx, speedy);
+                setSpeed(speedx/deltaTime, speedy/deltaTime);
             }
         }
     }
