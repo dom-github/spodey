@@ -5230,9 +5230,9 @@ let jumpCoolDown = 0;
 let curYPos = 0;
 let dashCoolDown = -9990;
 
-let startgame = false;
+let startgame = true;
 
-newGame();
+//newGame();
 // initScene();
 // addBoundaries();
 let firstclick = 0;
