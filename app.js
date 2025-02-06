@@ -389,27 +389,27 @@ let cameraPos = {x: 0, y: 0};
 //'natural' leg values for anchor + neutral position
 let spideyLegs = [
     //Left leggies
-    {x: -28, y: 15},
-    {x: -33, y: 17},
-    {x: -31, y: 21},
-    {x: -25, y: 22},
+    {x: -24, y: 15},
+    {x: -29, y: 17},
+    {x: -27, y: 21},
+    {x: -21, y: 22},
     //Right leggies
-    {x: 28, y: 15},
-    {x: 33, y: 17},
-    {x: 31, y: 21},
-    {x: 25, y: 22}
+    {x: 24, y: 15},
+    {x: 29, y: 17},
+    {x: 27, y: 21},
+    {x: 21, y: 22}
 ]
 let OspideyLegs = [
     //Left leggies
-    {x: -28, y: 15},
-    {x: -33, y: 17},
-    {x: -31, y: 21},
-    {x: -25, y: 22},
+    {x: -24, y: 15},
+    {x: -29, y: 17},
+    {x: -27, y: 21},
+    {x: -21, y: 22},
     //Right leggies
-    {x: 28, y: 15},
-    {x: 33, y: 17},
-    {x: 31, y: 21},
-    {x: 25, y: 22}
+    {x: 24, y: 15},
+    {x: 29, y: 17},
+    {x: 27, y: 21},
+    {x: 21, y: 22}
 ]
 
 spideyLegs.forEach((x, i) => {
@@ -421,27 +421,27 @@ spideyLegs.forEach((x, i) => {
 //large spread/reaching up legs for jumpin anim
 let spideyJump = [
     //Left leggies
-    {x: -16, y: 15},
-    {x: -24, y: 5},
-    {x: -27, y: -15},
-    {x: -16, y: -20},
+    {x: -12, y: -18},
+    {x: -23, y: -13},
+    {x: -20, y: 5},
+    {x: -12, y: 13},
     //Right leggies
-    {x: 16, y: 15},
-    {x: 24, y: 5},
-    {x: 27, y: -15},
-    {x: 16, y: -20}
+    {x: 12, y: -18},
+    {x: 23, y: -13},
+    {x: 20, y: 5},
+    {x: 12, y: 13}
 ]
 let OspideyJump = [
     //Left leggies
-    {x: -16, y: 15},
-    {x: -24, y: 5},
-    {x: -27, y: -15},
-    {x: -16, y: -20},
+    {x: -12, y: -18},
+    {x: -23, y: -13},
+    {x: -20, y: 5},
+    {x: -12, y: 13},
     //Right leggies
-    {x: 16, y: 15},
-    {x: 24, y: 5},
-    {x: 27, y: -15},
-    {x: 16, y: -20}
+    {x: 12, y: -18},
+    {x: 23, y: -13},
+    {x: 20, y: 5},
+    {x: 12, y: 13}
 ]
 
 // var spideyJump = [
@@ -477,27 +477,28 @@ let OspideyJump = [
 */
 let legOrigins = [
     //Left leggies
-    {x: -4, y: -2},
-    {x: -4, y: -1},
-    {x: -6, y: 0},
-    {x: -5, y: 1},
-    //Right leggies
-    {x: 4, y: -2},
     {x: 4, y: -1},
-    {x: 6, y: 0},
-    {x: 5, y: 1},
+    {x: 5, y: 0},
+    {x: 6, y: 1},
+    {x: 7, y: 2},
+    //Right leggies
+    {x: -4, y: -1},
+    {x: -5, y: 0},
+    {x: -6, y: 1},
+    {x: -7, y: 2},
 ]
 let OlegOrigins = [
     //Left leggies
-    {x: -4, y: -2},
-    {x: -4, y: -1},
-    {x: -6, y: 0},
-    {x: -5, y: 1},
-    //Right leggies
-    {x: 4, y: -2},
     {x: 4, y: -1},
-    {x: 6, y: 0},
-    {x: 5, y: 1},]
+    {x: 5, y: 0},
+    {x: 6, y: 1},
+    {x: 7, y: 2},
+    //Right leggies
+    {x: -4, y: -1},
+    {x: -5, y: 0},
+    {x: -6, y: 1},
+    {x: -7, y: 2},
+]
 
 function scaleWorld(news){
     //temp: redraw background hack
@@ -1474,18 +1475,18 @@ for(let i=333;i<worldSize.width+333;i+=300){
             //drawRockMed(i, ground, scale);
         } else if (type < 0.35) {
             drawRockMed(i, ground, scale);
-        } else if (type < 0.75) {
-            i+=40;
-            drawCactus(i, ground + 150 * Math.random(), 1);
-            i+=40;
-        } else if (type < 0.80) {
-            i+=10;
-            drawFlower(i, ground, scale * 0.10);
-            //drawCactus(i, ground + 150 * Math.random(), 1);
-            i+=10;
+        // } else if (type < 0.75) {
+        //     i+=40;
+        //     drawCactus(i, ground + 150 * Math.random(), 1);
+        //     i+=40;
+        // } else if (type < 0.80) {
+        //     i+=10;
+        //     drawFlower(i, ground, scale * 0.10);
+        //     //drawCactus(i, ground + 150 * Math.random(), 1);
+        //     i+=10;
         } else if (type < 0.97) {
             i+=300;
-            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(45 * Math.random())), 40*Math.random()-20);
+            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(24 * Math.random())), 40*Math.random()-20);
             i+=300;
         } else {
             drawStopSign(i, ground + 40 * Math.random(), 1.2);
@@ -1953,7 +1954,7 @@ function rotate_point(cx, cy, angle, p){
 
 function drawTree(x, y, s, seg, ang){
     //const rseed = 100 * Math.random();
-    const left =  x - (s*0.5)
+    const left =  x - (s*0.5);
     //const right = x + (s*0.5)
 
     const id = boundaryColliders.length;
@@ -1973,7 +1974,7 @@ function drawTree(x, y, s, seg, ang){
     //left
     for(let k=0;k<=seg;k++){
         const rlength = s + s + seg +((s*4) * Math.random());
-        const ang2 = (20 * Math.random()) - 10;
+        const ang2 = ((10 * Math.random()) - 5);
         const ang2R = toRadians(ang2);
         //angAr.push(ang2R);
         const sx = k === 0 ? left : boundaryColliders[boundaryColliders.length - 1].p2.x;
@@ -1987,15 +1988,15 @@ function drawTree(x, y, s, seg, ang){
         const sx = boundaryColliders[boundaryColliders.length-1].p2.x;
         const sy = boundaryColliders[boundaryColliders.length-1].p2.y;
 
-         const dsx = boundaryColliders[boundaryColliders.length-1 - (j*2)].p1.x;
-         const dsy = boundaryColliders[boundaryColliders.length- 1 - (j*2)].p1.y;
+        const dsx = boundaryColliders[boundaryColliders.length-1 - (j*2)].p1.x;
+        const dsy = boundaryColliders[boundaryColliders.length- 1 - (j*2)].p1.y;
 
         const top = j===0? s * 0.75 : s;
         //  const sx1 = boundaryColliders[boundaryColliders.length-1].p1.x;
         //  const sy1 = boundaryColliders[boundaryColliders.length-1].p1.y;
  
-          const dsx2 = boundaryColliders[boundaryColliders.length-1 - (j*2)].p2.x;
-          const dsy2 = boundaryColliders[boundaryColliders.length- 1 - (j*2)].p2.y;
+        const dsx2 = boundaryColliders[boundaryColliders.length-1 - (j*2)].p2.x;
+        const dsy2 = boundaryColliders[boundaryColliders.length- 1 - (j*2)].p2.y;
         //const prot = rotate_point(x, y, -angAr.pop(), {x: dsx + s, y: dsy});
         //prot.x += s;
         //prot.x += s/seg;
@@ -2005,7 +2006,7 @@ function drawTree(x, y, s, seg, ang){
         boundaryColliders.push({p1: {x: sx, y: sy}, p2: {x: dsx + top + (j*2), y: dsy}, solid: false});
 
         //area collision for big tree only
-        if(s > spideyRadius/2){
+        if(s > spideyRadius/4){
             areaBoxes.push({p1: {x: dsx, y: dsy}, p2: {x: sx, y: sy}, p3: {x: dsx2, y:dsy2}, p4: {x: dsx + top + (j*2), y: dsy}})
         } 
         
@@ -2028,7 +2029,7 @@ function drawTree(x, y, s, seg, ang){
         boundaryColliders[id+l].p2 = prot2;
     }
     //rotate colliders
-    if(s > spideyRadius/2){
+    if(s > spideyRadius/4){
         for(let l=0;l<=seg;l++){
             const cur = areaBoxes[areaid + l];
             const prot1 = rotate_point(x, y, angR, cur.p1);
@@ -2061,8 +2062,8 @@ function drawTree(x, y, s, seg, ang){
         for(let m=0, count=seg, lid=id;m<count;m++){
             if (count-m >= 0 && s > 10){
                 const cur = boundaryColliders[lid + m];
-                const rotL = 50 + (20 * Math.random() - 10); //+ (180 * Math.random());
-                const rotR = -50 - (20 * Math.random() - 10);
+                const rotL = 45 + (40 * Math.random() - 20); //+ (180 * Math.random());
+                const rotR = -45 + (40 * Math.random() - 20);
                 const prot1 = rotate_point(x, y, -angR, {...cur.p2});
                 //const prot2 =  cur.p2);
                 //console.log("ID:", id, "Seg:", seg, "Loop:", m)
@@ -2608,8 +2609,10 @@ function spideyMove(leg) {
             || Math.abs(speed.components[1]) > EPSILON){
             if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
                 //only change rotation on "too close" legs 
-                legMods[leg].dx += (speed.components[0]*5) * spiScl + rotate.x - spideyLegs[leg].x;
-                legMods[leg].dy += (speed.components[1]*5) * spiScl + rotate.y - spideyLegs[leg].y;
+                legMods[leg].anim = walking;
+                legMods[leg].start = lastTimestamp;
+                legMods[leg].dx += (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy += (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
             } else {
             //console.log("Moving");
             legMods[leg].anim = walking;
@@ -2725,7 +2728,8 @@ function spideyMove(leg) {
                 //     || dist > spideyRadius*0.25)
                 legMods[leg].dx =  grab.x - spideyLegs[leg].x;
                 legMods[leg].dy =  grab.y - spideyLegs[leg].y;
-                if(dist > spideyRadius*0.25){
+                if(dist > spideyRadius*0.25 && (Math.abs(speed.components[0]) > EPSILON
+                || Math.abs(speed.components[1]) > EPSILON)){
                     //console.log("recalculate", dist, leg);
                     //legMods[leg].anim = none;
                     legMods[leg].x = legMods[leg].jx;
@@ -3346,19 +3350,13 @@ let xrotation = 0.1;
 
 //testing with lots of entries for avg
 //do fewer Y so flip upside down is 'easier'
-let prevyrot = [yrotation,0,0,0,
-    yrotation,0,0,0,
-    yrotation,0,0,0,
-    yrotation,0,0,0,
+let prevyrot = [
     yrotation,0,0,0,
     yrotation,0,0,0,
     yrotation,0,0,0,
     0,0,0,yrotation
 ];
-let prevxrot = [xrotation,0,0,0,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
-    0,0,0,xrotation,
+let prevxrot = [
     0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
@@ -3633,11 +3631,16 @@ function drawSpidey(x, y) {
 
         //console.log(xrotation, yrotation)
 
-        const legOrigX = (legOrigins[i].x + ((legOrigins[i].y - legOrigins[i].x) * Math.min(1, Math.abs(xrotation/(spideyRadius/2)))))
-        const legOrigY = (legOrigins[i].y + ((legOrigins[i].x - legOrigins[i].y) * doubleClamp(-xrotation/spideyRadius, -0.5, 1)))
+        // const legOrigX = (legOrigins[i].x + ((legOrigins[i].y - legOrigins[i].x) * Math.min(1, Math.abs(xrotation/(spideyRadius/2)))))
+        // const legOrigY = (legOrigins[i].y + ((legOrigins[i].x - legOrigins[i].y) * doubleClamp(-xrotation/spideyRadius, -0.5, 1)))
+
+        const rotorig = rotate_point(0, 0, Math.atan2((-xrotation), -spideyRadius/2), {x: legOrigins[i].x, y: legOrigins[i].y});
+        const invrotorig = rotate_point(0, 0, Math.atan2((-xrotation), spideyRadius/2), {x: -legOrigins[i].x, y: -legOrigins[i].y});
+        const legOrigX = yrotation >= 0 ? rotorig.x : invrotorig.x;
+        const legOrigY = yrotation >= 0 ? rotorig.y : invrotorig.y;
         //const legrot = rotate_point(0, 0, Math.atan2(copySign(yrotation,legOrigins[i].x), -xrotation), {x: legOrigX,y: legOrigY});
         //console.log((rotation / Math.abs(rotation)))
-        const xanchor = x + dx + (copySign(dx, legOrigins[i].x) * (1 - Math.abs(yrotation  / (spideyRadius / 2))) / 2)
+        const xanchor = x + dx + (copySign(dx, -legOrigins[i].x) * (1 - Math.abs(yrotation  / (spideyRadius / 2))) / 2)
         const yanchor = y - dy * (yrotation / Math.abs(yrotation))
             * Math.min(1, Math.abs(yrotation / (spideyRadius / 3)))
             + (((dy) * (legOrigins[i].y/(2*spiScl))) 
@@ -3655,8 +3658,8 @@ function drawSpidey(x, y) {
         // const anchroty = y-rotated.y;
         //rotated.x = Math.abs(yrotation) > 12 ? x-xanchor : x-xanchor;
 
-        rotated.y = Math.abs(yrotation) > 5 ? rotated.y : yanchor-y + Math.max(0.1,(rotated.y-yanchor+y) * (yrotation/5));
-        invrotated.y = Math.abs(yrotation) > 5 ? invrotated.y : yanchor-y + ((invrotated.y-yanchor+y) * (-yrotation/5));
+        rotated.y = Math.abs(yrotation) > 10 ? rotated.y : yanchor-y + Math.max(0.1,(rotated.y-yanchor+y) * (yrotation/10));
+        invrotated.y = Math.abs(yrotation) > 10 ? invrotated.y : yanchor-y + ((invrotated.y-yanchor+y) * (-yrotation/10));
         const anchrotx = yrotation >= 0 ? x-rotated.x : x+invrotated.x;
         const anchroty = yrotation >= 0 ? y-rotated.y : y+invrotated.y;
            if (jactive){
@@ -3672,9 +3675,10 @@ function drawSpidey(x, y) {
     
         context.strokeStyle = "#000000";
         context.fillStyle = "#000000";
-        context.beginPath();
         const startx = x + legOrigX;
-        const starty = y + legOrigY;
+        const starty = y - legOrigY;
+       // context.fillCircle(startx, starty, 1);
+        context.beginPath();
         context.moveTo(startx, starty);
         // drawBugLeg(
         //     {x:x,y:y},
@@ -3717,7 +3721,7 @@ function drawSpidey(x, y) {
                 )
             );
          //draw leg then foot
-            context.lineWidth = 1.5 * spiScl;
+            context.lineWidth = 2 * spiScl;
             context.stroke();
             if (legMods[i].anim === grabbing){
                 context.fillCircle(
@@ -4000,8 +4004,8 @@ function gravity() {
                         // legMods[j].y = rope.components[1] - spideyPos.y - spideyLegs[j].y;
                         const scale =  (position.subtract(swingPoint).length() - Math.abs(spideyJump[j].x/2) - legOrigins[j].y - spideyRadius*0.1) / position.subtract(swingPoint).length();
                         let rope = position.subtract(swingPoint).scaleBy(scale).add(swingPoint)
-                        legMods[j].dx = j === 3 || j === 7 || j === 2 || j === 6 ? rope.components[0] - spideyPos.x - spideyLegs[j].x : spideyJump[j].x*0.75 - spideyLegs[j].x;
-                        legMods[j].dy = j === 3 || j === 7 || j === 2 || j === 6  ? rope.components[1] - spideyPos.y - spideyLegs[j].y : spideyJump[j].y*0.75 - spideyLegs[j].y;
+                        legMods[j].dx = j === 3 || j === 7 || j === 2 || j === 6 ? spideyJump[j].x*0.75 - spideyLegs[j].x : rope.components[0] - spideyPos.x - spideyLegs[j].x;
+                        legMods[j].dy = j === 3 || j === 7 || j === 2 || j === 6  ? spideyJump[j].y*0.75 - spideyLegs[j].y : rope.components[1] - spideyPos.y - spideyLegs[j].y;
                     } 
             }
         } 
@@ -4946,26 +4950,38 @@ function drawObjects(bgXoffset, bgYoffset){
     // const w = background.width;
     // const h = background.height;
     if (drawBuffer.length > 0){
-        cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
+        //cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
         bgctx.save();
+        //bgctx.fillStyle = "#0f0"
+        console.log(overdraw + Math.abs(overX), overdraw + Math.abs(overY), bgOverflow+viewport.width, bgOverflow+viewport.height)
+        bgctx.beginPath();
+        bgctx.rect(0,0,background.width/worldScale,background.height/worldScale);
+        bgctx.moveTo(overdraw/worldScale + Math.abs(overX)*worldScale, overdraw/worldScale + Math.abs(overY)*worldScale);
+        bgctx.lineTo(overdraw/worldScale + Math.abs(overX)*worldScale, bgOverflow/worldScale+viewport.height/worldScale)
+        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale+viewport.height/worldScale)
+        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, overdraw/worldScale + Math.abs(overY)*worldScale)
+        bgctx.clip();
+        //bgctx.fill();
         bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
+        
         for(let i=0; drawBuffer.length > 0 && i<8; i++){
             const x = drawBuffer.shift();
-            //console.log("drawing", x.type)
+            console.log("drawing", x.type)
             //animate
             paintObjs(x);
         }
         bgctx.restore();
-        //bgctx.drawImage(cbackground, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
-        bgctx.drawImage(cbackground, 
-            //source XY
-            bgOverflow-Math.abs((overX)*worldScale), bgOverflow-Math.abs((overY)*worldScale),
-            //source WH
-            viewport.width+Math.abs((overX)*worldScale), viewport.height+Math.abs((overY)*worldScale),
-            //dest XY 
-            (bgOverflow/worldScale)-Math.abs((overX)), (bgOverflow/worldScale)-Math.abs((overY)), 
-            //dest WH
-            (viewport.width / worldScale)+Math.abs((overX)), (viewport.height / worldScale)+Math.abs((overY)));
+        //bgctx.drawImage(cbackground, bgOverflow, bgOverflow, viewport.width*worldScale, viewport.height*worldScale, bgOverflow/worldScale, bgOverflow/worldScale, viewport.width, viewport.height);
+        // bgctx.drawImage(cbackground, 
+        //     //source XY
+        //     bgOverflow-Math.abs((overX)*worldScale), bgOverflow-Math.abs((overY)*worldScale),
+        //     //source WH
+        //     viewport.width+Math.abs((overX)*worldScale), viewport.height+Math.abs((overY)*worldScale),
+        //     //dest XY 
+        //     (bgOverflow/worldScale)-Math.abs((overX)), (bgOverflow/worldScale)-Math.abs((overY)), 
+        //     //dest WH
+        //     (viewport.width / worldScale)+Math.abs((overX)), (viewport.height / worldScale)+Math.abs((overY))
+        // );
     }
     if(
         (Math.abs(overX)*worldScale > overdraw || Math.abs(overY)*worldScale > overdraw)
@@ -5014,10 +5030,10 @@ function drawObjects(bgXoffset, bgYoffset){
 
                 bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
                 scnObj.forEach((x) => {
-                if(x.max.x > spideyPos.x - viewport.width
-                    && x.min.x < spideyPos.x + viewport.width
-                    && x.max.y > spideyPos.y - viewport.height
-                    && x.min.y < spideyPos.y + viewport.height
+                if(x.max.x > spideyPos.x - background.width
+                    && x.min.x < spideyPos.x + background.width
+                    && x.max.y > spideyPos.y - background.height
+                    && x.min.y < spideyPos.y + background.height
                     ){
                     //console.log("DRAWBG")
                     paintObjs(x);
@@ -5049,11 +5065,12 @@ function drawObjects(bgXoffset, bgYoffset){
             if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-Math.ceil(Math.abs(overX)), bgYoffset, bgOverflow, bgh/worldScale); 
 
             //clear anything that hasnt been drawn in the buffer yet :(
-            drawBuffer.forEach((x, id)=> {
-                //console.log("Clearing... ", id)
-                paintObjs(x);
-            });
-            drawBuffer.length = 0;
+        for(let i=0; drawBuffer.length > 0; i++){
+            const x = drawBuffer.shift();
+            console.log("Clearing... ", i)
+            //animate
+            paintObjs(x);
+        }
             //paintGround(0, 1); 
             bgctx.restore();
             scnObj.forEach((x) => {
@@ -5213,7 +5230,9 @@ let jumpCoolDown = 0;
 let curYPos = 0;
 let dashCoolDown = -9990;
 
-let startgame = true;
+let startgame = false;
+
+newGame();
 // initScene();
 // addBoundaries();
 let firstclick = 0;
@@ -5870,14 +5889,16 @@ function newGame(){
         initMobileUI();
         drawMobileUI();
     }
-    scaleSpidey(42);
-    scaleWorld(4);
+    scaleSpidey(50);
+    scaleWorld(3);
     startgame = false;
     skipMouseInput = true;
     initScene();
     addBoundaries();
-    spideyPos = {x: mousePosition.x, y: worldSize.height-1300} // 1300
-
+    spideyPos = {x: mousePosition.x, y: worldSize.height-300} // 1300
+    for(let i=0; i<spideyLegs.length; i++){
+        legMods[i].anim = walking;
+    }
     
     //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
     //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0], x: spideyPos.x, y: spideyPos.y, s: worldScale}, [offscreen]);
