@@ -389,25 +389,25 @@ let cameraPos = {x: 0, y: 0};
 //'natural' leg values for anchor + neutral position
 let spideyLegs = [
     //Left leggies
-    {x: -24, y: 15},
-    {x: -29, y: 17},
-    {x: -27, y: 21},
-    {x: -21, y: 22},
+    {x: -21, y: 15},
+    {x: -27, y: 17},
+    {x: -25, y: 21},
+    {x: -20, y: 22},
     //Right leggies
-    {x: 24, y: 15},
-    {x: 29, y: 17},
-    {x: 27, y: 21},
-    {x: 21, y: 22}
+    {x: 21, y: 15},
+    {x: 27, y: 17},
+    {x: 25, y: 21},
+    {x: 20, y: 22}
 ]
 let OspideyLegs = [
     //Left leggies
-    {x: -24, y: 15},
-    {x: -29, y: 17},
+    {x: -20, y: 15},
+    {x: -25, y: 17},
     {x: -27, y: 21},
     {x: -21, y: 22},
     //Right leggies
-    {x: 24, y: 15},
-    {x: 29, y: 17},
+    {x: 20, y: 15},
+    {x: 25, y: 17},
     {x: 27, y: 21},
     {x: 21, y: 22}
 ]
@@ -422,25 +422,25 @@ spideyLegs.forEach((x, i) => {
 let spideyJump = [
     //Left leggies
     {x: -12, y: -18},
-    {x: -23, y: -13},
-    {x: -20, y: 5},
+    {x: -21, y: -13},
+    {x: -18, y: 5},
     {x: -12, y: 13},
     //Right leggies
     {x: 12, y: -18},
-    {x: 23, y: -13},
-    {x: 20, y: 5},
+    {x: 21, y: -13},
+    {x: 18, y: 5},
     {x: 12, y: 13}
 ]
 let OspideyJump = [
     //Left leggies
     {x: -12, y: -18},
-    {x: -23, y: -13},
-    {x: -20, y: 5},
+    {x: -21, y: -13},
+    {x: -18, y: 5},
     {x: -12, y: 13},
     //Right leggies
     {x: 12, y: -18},
-    {x: 23, y: -13},
-    {x: 20, y: 5},
+    {x: 21, y: -13},
+    {x: 18, y: 5},
     {x: 12, y: 13}
 ]
 
@@ -480,24 +480,24 @@ let legOrigins = [
     {x: 4, y: -1},
     {x: 5, y: 0},
     {x: 6, y: 1},
-    {x: 7, y: 2},
+    {x: 5, y: 2},
     //Right leggies
     {x: -4, y: -1},
     {x: -5, y: 0},
     {x: -6, y: 1},
-    {x: -7, y: 2},
+    {x: -5, y: 2},
 ]
 let OlegOrigins = [
     //Left leggies
     {x: 4, y: -1},
     {x: 5, y: 0},
     {x: 6, y: 1},
-    {x: 7, y: 2},
+    {x: 5, y: 2},
     //Right leggies
     {x: -4, y: -1},
     {x: -5, y: 0},
     {x: -6, y: 1},
-    {x: -7, y: 2},
+    {x: -5, y: 2},
 ]
 
 function scaleWorld(news){
@@ -1486,7 +1486,7 @@ for(let i=333;i<worldSize.width+333;i+=300){
         //     i+=10;
         } else if (type < 0.97) {
             i+=300;
-            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(24 * Math.random())), 40*Math.random()-20);
+            drawTree(i, ground + 125 * Math.random(), 15 + (85 * Math.random()), 1 + (Math.floor(21 * Math.random())), 40*Math.random()-20);
             i+=300;
         } else {
             drawStopSign(i, ground + 40 * Math.random(), 1.2);
@@ -2604,23 +2604,23 @@ function spideyMove(leg) {
         
          const dist = Math.sqrt(x * x + y * y);
         //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y) //legMods[mirror].anim !== walking;
-        if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3))){}
-        else if(Math.abs(speed.components[0]) > EPSILON
+        //if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3))){}
+        if(Math.abs(speed.components[0]) > EPSILON
             || Math.abs(speed.components[1]) > EPSILON){
             if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
                 //only change rotation on "too close" legs 
                 legMods[leg].anim = walking;
                 legMods[leg].start = lastTimestamp;
-                legMods[leg].dx += (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
-                legMods[leg].dy += (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
-            } else {
+                legMods[leg].dx = spideyLegs[leg].x * 0.33 + (speed.components[0]*5) * spiScl + rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy = spideyLegs[leg].y * 0.33 + (speed.components[1]*5) * spiScl + rotate.y - spideyLegs[leg].y;
+            } else if (dist > spideyRadius * 0.66 * Math.min(1.33, spiScl)){
             //console.log("Moving");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*5) * spiScl;
-            legMods[leg].dy = (speed.components[1]*5) * spiScl;
+            legMods[leg].dx = -spideyLegs[leg].x * 0.33 + (speed.components[0]*5) * spiScl;
+            legMods[leg].dy = -spideyLegs[leg].y * 0.33 + (speed.components[1]*5) * spiScl;
 
             }
         }
@@ -2635,8 +2635,8 @@ function spideyMove(leg) {
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*10) * spiScl + rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = (speed.components[1]*10) * spiScl + rotate.y - spideyLegs[leg].y;
+            legMods[leg].dx = (speed.components[0]*5) * spiScl + rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = (speed.components[1]*5) * spiScl + rotate.y - spideyLegs[leg].y;
         }
         
     }
@@ -3360,7 +3360,8 @@ let prevxrot = [
     0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation,
-    0,0,0,xrotation];
+    0,0,0,xrotation
+];
 function drawSpidey(x, y) {
 
     //console.log()
@@ -3379,8 +3380,8 @@ function drawSpidey(x, y) {
         if(!falling && legMods[e].anim < grabWeb){
             sumy += legMods[e].jy + spideyLegs[e].y;
             sumx += legMods[e].jx + spideyLegs[e].x;
-            yrotation = doubleClamp(sumy / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.66 * Math.min(1.33, spiScl));
-            xrotation = doubleClamp(sumx / 8, -spideyRadius * 0.5 * Math.min(1.33, spiScl), spideyRadius * 0.66 * Math.min(1.33, spiScl));
+            yrotation = doubleClamp(sumy / 8, -spideyRadius * Math.min(1.33, spiScl), spideyRadius * Math.min(1.33, spiScl));
+            xrotation = doubleClamp(sumx / 8, -spideyRadius * Math.min(1.33, spiScl), spideyRadius * Math.min(1.33, spiScl));
         }
     }
     if (Math.abs(yrotation) >= 0) {
@@ -3634,8 +3635,8 @@ function drawSpidey(x, y) {
         // const legOrigX = (legOrigins[i].x + ((legOrigins[i].y - legOrigins[i].x) * Math.min(1, Math.abs(xrotation/(spideyRadius/2)))))
         // const legOrigY = (legOrigins[i].y + ((legOrigins[i].x - legOrigins[i].y) * doubleClamp(-xrotation/spideyRadius, -0.5, 1)))
 
-        const rotorig = rotate_point(0, 0, Math.atan2((-xrotation), -spideyRadius/2), {x: legOrigins[i].x, y: legOrigins[i].y});
-        const invrotorig = rotate_point(0, 0, Math.atan2((-xrotation), spideyRadius/2), {x: -legOrigins[i].x, y: -legOrigins[i].y});
+        const rotorig = rotate_point(0, 0, Math.atan2((-xrotation), -spideyRadius/2.5), {x: legOrigins[i].x, y: legOrigins[i].y});
+        const invrotorig = rotate_point(0, 0, Math.atan2((-xrotation), spideyRadius/2.5), {x: -legOrigins[i].x, y: -legOrigins[i].y});
         const legOrigX = yrotation >= 0 ? rotorig.x : invrotorig.x;
         const legOrigY = yrotation >= 0 ? rotorig.y : invrotorig.y;
         //const legrot = rotate_point(0, 0, Math.atan2(copySign(yrotation,legOrigins[i].x), -xrotation), {x: legOrigX,y: legOrigY});
@@ -4670,8 +4671,8 @@ function drawWebs(){
                         // }
                        
                     }
-                }
-                //temp - 2 groups of 3 curves -- later to define in pattern array: 0,1,1,1,0,1,1,1 etc
+                } else 
+                //temp - later to define in pattern array ?
                 if(animate < 1) {
                     //web to start position
                     const amp = {...amplitude};
@@ -4953,7 +4954,7 @@ function drawObjects(bgXoffset, bgYoffset){
         //cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
         bgctx.save();
         //bgctx.fillStyle = "#0f0"
-        console.log(overdraw + Math.abs(overX), overdraw + Math.abs(overY), bgOverflow+viewport.width, bgOverflow+viewport.height)
+        //console.log(overdraw + Math.abs(overX), overdraw + Math.abs(overY), bgOverflow+viewport.width, bgOverflow+viewport.height)
         bgctx.beginPath();
         bgctx.rect(0,0,background.width/worldScale,background.height/worldScale);
         bgctx.moveTo(overdraw/worldScale + Math.abs(overX)*worldScale, overdraw/worldScale + Math.abs(overY)*worldScale);
@@ -4966,7 +4967,7 @@ function drawObjects(bgXoffset, bgYoffset){
         
         for(let i=0; drawBuffer.length > 0 && i<8; i++){
             const x = drawBuffer.shift();
-            console.log("drawing", x.type)
+            //console.log("drawing", x.type)
             //animate
             paintObjs(x);
         }
@@ -5067,7 +5068,7 @@ function drawObjects(bgXoffset, bgYoffset){
             //clear anything that hasnt been drawn in the buffer yet :(
         for(let i=0; drawBuffer.length > 0; i++){
             const x = drawBuffer.shift();
-            console.log("Clearing... ", i)
+            //console.log("Clearing... ", i)
             //animate
             paintObjs(x);
         }
@@ -5232,7 +5233,7 @@ let dashCoolDown = -9990;
 
 let startgame = true;
 
-//newGame();
+newGame();
 // initScene();
 // addBoundaries();
 let firstclick = 0;
@@ -5528,6 +5529,8 @@ function update(timestamp) {
         const bgXoffset = Math.max(0, Math.min(spideyPos.x - bgw*0.5, worldSize.width - bgw));
         const bgYoffset = Math.max(0, Math.min(spideyPos.y - bgh*0.5, worldSize.height - bgh));
         
+        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
+
         const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x - bgw*0.5), worldSize.width - bgw)));
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y - bgh*0.5), worldSize.height - bgh)));
         
@@ -5542,8 +5545,6 @@ function update(timestamp) {
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
         //     w, h)
-
-        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
 
         context.save();
         context.translate(
@@ -5632,16 +5633,16 @@ function processInput () {
     // dash towards cursor 
     // or else current move direction 
     // if enemy is close, bite it 
-    // if web sac is close, eat it 
+    // if web snac is close, eat it 
     if (dashPressed){
         dashPressed = false;
         // console.log("Dash!")
         if (lastTimestamp - dashCoolDown > 2000){
             dashCoolDown = lastTimestamp;
             if(!(falling && shiftPressed && layWeb)){
-            const grav = falling? 2 : 0
-                let speedx = speed.components[0] * 12 * spiScl;
-                let speedy = (speed.components[1] - grav) * 12 * spiScl;
+            const grav = falling && speed.components[1] >= -1 ? 2 : 0
+                let speedx = speed.components[0] * 8 * spiScl;
+                let speedy = (speed.components[1] - grav) * 8 * spiScl;
                 if((LMBHeld || RMBHeld) && cursorPos.length() > spideyRadius*0.5) {
                     speedx = cursorPos.components[0];
                     speedy = cursorPos.components[1] - grav;
@@ -6079,25 +6080,25 @@ function drawMobileUI() {
     uictx.lineWidth = 2 * (size/100);
     //uictx.strokeStyle = `rgba(127,127,127,0.5)`
     // uictx.stroke();
-    uictx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 10 * (size/100));
-    uictx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 10 * (size/100));
+    uictx.fillCircle(UIButtons[1].avg.x, UIButtons[1].avg.y, 8 * (size/100));
+    uictx.fillCircle(UIButtons[4].avg.x, UIButtons[4].avg.y, 8 * (size/100));
     uictx.save();
     uictx.beginPath();
     uictx.rect(UIButtons[1].avg.x-150, UIButtons[1].avg.y-150,UIButtons[1].avg.x+150, UIButtons[1].avg.y+150);
-    uictx.fillCirclePath(UIButtons[1].avg.x, UIButtons[1].avg.y, 10 * (size/100), true);
+    uictx.fillCirclePath(UIButtons[1].avg.x, UIButtons[1].avg.y, 8 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
     for(let i=0;i<OspideyLegs.length;i++){
-        const xanchor = UIButtons[1].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
+        const xanchor = UIButtons[1].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, -legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[1].avg.y - OspideyLegs[i].y * (size/100)
             + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
-        uictx.moveTo(UIButtons[1].avg.x + legOrigins[i].x, UIButtons[1].avg.y + legOrigins[i].y);
+        uictx.moveTo(UIButtons[1].avg.x - legOrigins[i].x, UIButtons[1].avg.y + legOrigins[i].y);
         uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100))
         
         uictx.moveTo(UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100));
-        uictx.strokeCirclePath(UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100), 2.5 * (size/100));
+        uictx.strokeCirclePath(UIButtons[1].avg.x + OspideyJump[i].x * (size/100), UIButtons[1].avg.y + OspideyJump[i].y * (size/100), 1.5 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
@@ -6105,46 +6106,46 @@ function drawMobileUI() {
     uictx.save();
     uictx.beginPath();
     uictx.rect(UIButtons[4].avg.x-150, UIButtons[4].avg.y-150,UIButtons[4].avg.x+150, UIButtons[4].avg.y+150);
-    uictx.fillCirclePath(UIButtons[4].avg.x, UIButtons[4].avg.y, 10 * (size/100), true);
+    uictx.fillCirclePath(UIButtons[4].avg.x, UIButtons[4].avg.y, 8 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
     for(let i=0;i<OspideyLegs.length;i++){
-        const xanchor = UIButtons[4].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
+        const xanchor = UIButtons[4].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, -legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[4].avg.y - OspideyLegs[i].y * (size/100)
             + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
-        uictx.moveTo(UIButtons[4].avg.x + legOrigins[i].x, UIButtons[4].avg.y + legOrigins[i].y);
+        uictx.moveTo(UIButtons[4].avg.x - legOrigins[i].x, UIButtons[4].avg.y + legOrigins[i].y);
         uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100));
 
         uictx.moveTo(UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100));
-        uictx.strokeCirclePath(UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100), 2.5 * (size/100));
+        uictx.strokeCirclePath(UIButtons[4].avg.x + OspideyJump[i].x * (size/100), UIButtons[4].avg.y + OspideyJump[i].y * (size/100), 1.5 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
     
 //UI icon: swing
-    uictx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 10 * (size/100));
-    uictx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 10 * (size/100));
+    uictx.fillCircle(UIButtons[2].avg.x, UIButtons[2].avg.y, 8 * (size/100));
+    uictx.fillCircle(UIButtons[5].avg.x, UIButtons[5].avg.y, 8 * (size/100));
     uictx.save();
     uictx.beginPath();
     uictx.rect(UIButtons[2].p1.x-50, UIButtons[2].p1.y+1,UIButtons[2].p3.x+50, UIButtons[2].p3.y+50);
-    uictx.fillCirclePath(UIButtons[2].avg.x, UIButtons[2].avg.y, 10 * (size/100), true);
+    uictx.fillCirclePath(UIButtons[2].avg.x, UIButtons[2].avg.y, 8 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
     uictx.moveTo(UIButtons[2].p1.x,UIButtons[2].p1.y);
     uictx.lineTo(UIButtons[2].avg.x,UIButtons[2].avg.y);
     for(let i=0;i<OspideyLegs.length;i++){
-        const xanchor = UIButtons[2].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
+        const xanchor = UIButtons[2].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, -legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[2].avg.y - OspideyLegs[i].y * (size/100)
             + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
-        uictx.moveTo(UIButtons[2].avg.x + legOrigins[i].x, UIButtons[2].avg.y + legOrigins[i].y);
+        uictx.moveTo(UIButtons[2].avg.x - legOrigins[i].x, UIButtons[2].avg.y + legOrigins[i].y);
         uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100))
         
         uictx.moveTo(UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100));
-        uictx.strokeCirclePath(UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100), 2 * (size/100));
+        uictx.strokeCirclePath(UIButtons[2].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[2].avg.y + OspideyJump[i].y*0.75 * (size/100), 1.5 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
@@ -6152,22 +6153,22 @@ function drawMobileUI() {
     uictx.save();
     uictx.beginPath();
     uictx.rect(UIButtons[5].avg.x-50, UIButtons[5].p1.y+1,UIButtons[5].avg.x+50, UIButtons[5].avg.y+50);
-    uictx.fillCirclePath(UIButtons[5].avg.x, UIButtons[5].avg.y, 10 * (size/100), true);
+    uictx.fillCirclePath(UIButtons[5].avg.x, UIButtons[5].avg.y, 8 * (size/100), true);
     uictx.clip();
     uictx.beginPath();
     uictx.moveTo(UIButtons[5].p1.x,UIButtons[5].p1.y);
     uictx.lineTo(UIButtons[5].avg.x,UIButtons[5].avg.y);
     for(let i=0;i<OspideyLegs.length;i++){
-        const xanchor = UIButtons[5].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, legOrigins[i].x) 
+        const xanchor = UIButtons[5].avg.x + OspideyLegs[i].x * (size/100) + (copySign(OspideyLegs[i].x, -legOrigins[i].x) 
         * (1 - Math.abs(20  / (spideyRadius / 2))) / 2)
         const yanchor = UIButtons[5].avg.y - OspideyLegs[i].y * (size/100)
             + (((OspideyLegs[i].y) * (legOrigins[i].y/2)))
         //uictx.beginPath();
-        uictx.moveTo(UIButtons[5].avg.x + legOrigins[i].x, UIButtons[5].avg.y + legOrigins[i].y);
+        uictx.moveTo(UIButtons[5].avg.x - legOrigins[i].x, UIButtons[5].avg.y + legOrigins[i].y);
         uictx.quadraticCurveTo(xanchor, yanchor, UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100))
         
         uictx.moveTo(UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100));
-        uictx.strokeCirclePath(UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100), 2 * (size/100));
+        uictx.strokeCirclePath(UIButtons[5].avg.x + OspideyJump[i].x*0.75 * (size/100), UIButtons[5].avg.y + OspideyJump[i].y*0.75 * (size/100), 1.5 * (size/100));
     }
     uictx.stroke();
     uictx.restore();
