@@ -4,9 +4,22 @@ const canvas = document.getElementById("worldCanvas");
 const UI = document.getElementById("UI");
 const viewport = document.getElementById("viewport");
 const background = document.getElementById('background');
-//const offscreen = background.transferControlToOffscreen();
 
-//const offscreen = new OffscreenCanvas(window.innerWidth, window.innerHeight);
+
+const workerList = [];
+let threads = false
+if (window.Worker && navigator.hardwareConcurrency > 1) {
+    //threads = true;
+    for (let i = 0; i < window.navigator.hardwareConcurrency; i++) {
+    let newWorker = {
+        worker: new Worker("worker_objs.js"),
+        inUse: false,
+    };
+    workerList.push(newWorker);
+    }
+}
+// const offscreen = ;
+const offscreen = threads? background.transferControlToOffscreen() : new OffscreenCanvas(window.innerWidth, window.innerHeight);
 // const canvas = new OffscreenCanvas(window.innerWidth, window.innerHeight);
 // const UI = new OffscreenCanvas(window.innerWidth, window.innerHeight);
 
@@ -20,20 +33,18 @@ const vctx = viewport.getContext("2d", { alpha: false });
 const uictx = UI.getContext("2d", { alpha: true });
 
 
-
-
 //temp: dummy canvas for single-thread fallback
-// const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
-// const bgctx = window.Worker ? woffscrn.getContext("2d", { alpha: false }) : offscreen.getContext("2d", { alpha: false });
-const bgctx = background.getContext("2d", { alpha: false });
-
+//const woffscrn = window.Worker ? new OffscreenCanvas(16,16) : null;
 const cbackground = new OffscreenCanvas(window.innerWidth, window.innerHeight);
-const cbgctx = cbackground.getContext("2d", { alpha: false });
+const bgctx = threads ? cbackground.getContext("2d", { alpha: false }) : background.getContext("2d", { alpha: false });
+// const bgctx = background.getContext("2d", { alpha: false });
+
+//const cbgctx = cbackground.getContext("2d", { alpha: false });
 
 
 console.log(viewport.clientHeight, viewport.clientWidth)
 console.log(window.innerHeight, window.innerWidth)
-console.log("conk",navigator.hardwareConcurrency)
+console.log("conk",workerList)
 
 const bgOverflow = 512;
 //copy
@@ -48,18 +59,16 @@ const bgOverflow = 512;
 //15360
 let worldSize = {width: 15360, height: 6666};
 
-bgctx.width = window.innerWidth + bgOverflow*2;
-bgctx.height = window.innerHeight + bgOverflow*2;
-background.width = window.innerWidth + bgOverflow*2;
-background.height = window.innerHeight + bgOverflow*2;
-cbgctx.width = window.innerWidth + bgOverflow*2;
-cbgctx.height = window.innerHeight + bgOverflow*2;
+if(!threads){
+    bgctx.width = window.innerWidth + bgOverflow*2;
+    bgctx.height = window.innerHeight + bgOverflow*2;
+    background.width = window.innerWidth + bgOverflow*2;
+    background.height = window.innerHeight + bgOverflow*2;
+}
+// cbgctx.width = window.innerWidth + bgOverflow*2;
+// cbgctx.height = window.innerHeight + bgOverflow*2;
 cbackground.width = window.innerWidth + bgOverflow*2;
 cbackground.height = window.innerHeight + bgOverflow*2;
-// if(!window.Worker){
-//     bgctx.width = window.innerWidth;
-//     bgctx.height = window.innerHeight;
-// }
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 UI.width =  window.innerWidth;
@@ -92,16 +101,16 @@ function setDim() {
     uictx.height = window.innerHeight;
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    //if(!window.Worker){
+    if(!threads){
         bgctx.width = window.innerWidth + bgOverflow*2;
         bgctx.height = window.innerHeight + bgOverflow*2;
         background.width = window.innerWidth + bgOverflow*2;
         background.height = window.innerHeight + bgOverflow*2;
-        cbgctx.width = window.innerWidth + bgOverflow*2;
-        cbgctx.height = window.innerHeight + bgOverflow*2;
+        // cbgctx.width = window.innerWidth + bgOverflow*2;
+        // cbgctx.height = window.innerHeight + bgOverflow*2;
         cbackground.width = window.innerWidth + bgOverflow*2;
         cbackground.height = window.innerHeight + bgOverflow*2;
-    //}
+    }
     
 
     if(startgame) {
@@ -384,7 +393,7 @@ let spiScl = spideyRadius/100;
 
 let fliesEaten = 0;
 //lets make a spidey boi
-let spideyPos = {x: 0, y: 0}; // ??? This has to intersect w/ a collision?
+let spideyPos = {x: 0, y: 0}; 
 let cameraPos = {x: 0, y: 0}; 
 //'natural' leg values for anchor + neutral position
 let spideyLegs = [
@@ -501,20 +510,24 @@ let OlegOrigins = [
 ]
 
 function scaleWorld(news){
-    //temp: redraw background hack
-    bgOffset.x = -9999;
-    bgOffset.y = -9999;
         context.scale(1/worldScale, 1/worldScale);
-        //if(!window.Worker){
+        if(threads){
+
+        }
             bgctx.scale(1/worldScale, 1/worldScale);
-            cbgctx.scale(1/worldScale, 1/worldScale);
+            // cbgctx.scale(1/worldScale, 1/worldScale);
             //bgctx.scale(news, news);
         //}
         worldScale = Math.max(1, Math.min(8,news));
+        worldScale = Math.round(worldScale * 10) * 0.1;
+        
         context.scale(worldScale, worldScale);
         bgctx.scale(worldScale, worldScale);
-        cbgctx.scale(worldScale, worldScale);
+        // cbgctx.scale(worldScale, worldScale);
         console.log(worldScale);
+    //temp: redraw background hack
+    bgOffset.x = -9999;
+    bgOffset.y = -9999;
 
 }
 scaleSpidey(spideyRadius);
@@ -1473,8 +1486,8 @@ for(let i=333;i<worldSize.width+333;i+=300){
             i+=80 * scale;
             drawRockMed(i, ground + 160 * Math.random(), -scale, true);
             //drawRockMed(i, ground, scale);
-        } else if (type < 0.35) {
-            drawRockMed(i, ground, scale);
+        // } else if (type < 0.35) {
+        //     drawRockMed(i, ground, scale);
         // } else if (type < 0.75) {
         //     i+=40;
         //     drawCactus(i, ground + 150 * Math.random(), 1);
@@ -2475,10 +2488,17 @@ const attack = (type, frequency, attackTime, decayTime, sustainValue, releaseTim
 //this returns the webID (or -1) thus only truey/falsey
 function checkWebCollision(tx, ty, r){
     let hitLine = -1;
-    webArray.forEach((y, i) => {
-        if (doesLineInterceptCircle(y.p1, y.p2, {x:tx,y:ty}, r)) {
-            hitLine = i;
-        };
+    webArray.forEach((x, i) => {
+        if(
+            Math.max(x.p1.x, x.p2.x) > tx - r
+            && Math.min(x.p1.x, x.p2.x) < tx + r
+            && Math.max(x.p1.y, x.p2.y) > ty - r
+            && Math.min(x.p1.y, x.p2.y) < ty + r
+        ) {
+            if (doesLineInterceptCircle(x.p1, x.p2, {x:tx,y:ty}, r)) {
+                hitLine = i;
+            };
+        }
     })
     return hitLine;
 };
@@ -2487,12 +2507,20 @@ function checkCollision(tx, ty, r){
     //walkAreas
     let collision = -1;
     areaCircles.forEach((x, id) => {
-        //if (collision) return;
-        const intersect = intersection({x: tx, 
-            y: ty, r: r}, x)
-            //console.log(intersect)
-            if (intersect.one_is_in_other){
-                collision = id;
+        
+        if(
+            x.x + x.r > tx - r*2
+            && x.x - x.r < tx + r*2
+            && x.y + x.r > ty - r*2
+            && x.y - x.r < ty + r*2
+        ) {
+            //if (collision) return;
+            const intersect = intersection({x: tx, 
+                y: ty, r: r}, x)
+                //console.log(intersect)
+                if (intersect.one_is_in_other){
+                    collision = id;
+                }
             }
     });
     //if (collision) return;
@@ -2519,17 +2547,31 @@ function checkCollision(tx, ty, r){
 
     if(collision === -1){
         boundaryCircles.forEach((x, id) => {
-            const circRadius = x.r;
-            const circPos = {x: x.x, y: x.y};
-            const hits = intersection({x: tx, y: ty, r: r}, {...circPos, r: circRadius});
-            if (hits > 0) collision = id;
+            if(
+                x.x + x.r > tx - r*2
+                && x.x - x.r < tx + r*2
+                && x.y + x.r > ty - r*2
+                && x.y - x.r < ty + r*2
+            ) {
+                const circRadius = x.r;
+                const circPos = {x: x.x, y: x.y};
+                const hits = intersection({x: tx, y: ty, r: r}, {...circPos, r: circRadius});
+                if (hits > 0) collision = id;
+            }
         });
     }
         //lines 
         
     if(collision === -1){
         boundaryColliders.forEach((x, id) => {
-            if(doesLineInterceptCircle(x.p1, x.p2, {x: tx, y: ty}, r)) collision = id;
+            if(
+                Math.max(x.p1.x, x.p2.x) > tx - r
+                && Math.min(x.p1.x, x.p2.x) < tx + r
+                && Math.max(x.p1.y, x.p2.y) > ty - r
+                && Math.min(x.p1.y, x.p2.y) < ty + r
+            ) {
+                if(doesLineInterceptCircle(x.p1, x.p2, {x: tx, y: ty}, r)) collision = id;
+            }
         });
     }
     return collision;
@@ -2583,7 +2625,7 @@ function fallSFX(i){
 //if nearest is inside r/2 animate it 1x 2y
 function spideyMove(leg) {
     
-    const rotate = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)+(spideyRadius/2.5)), {x: spideyLegs[leg].x, y: spideyLegs[leg].y})
+    const rotate = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)+(spideyRadius/2.5)), {x: spideyJump[leg].x, y: spideyJump[leg].y})
     rotate.y = yrotation >= 0? rotate.y : -rotate.y;
     const x = (spideyLegs[leg].x + legMods[leg].x);
     const y = (spideyLegs[leg].y + legMods[leg].y);
@@ -2611,23 +2653,23 @@ function spideyMove(leg) {
                 //only change rotation on "too close" legs 
                 legMods[leg].anim = walking;
                 legMods[leg].start = lastTimestamp;
-                legMods[leg].dx = spideyLegs[leg].x * 0.33 + (speed.components[0]*5) * spiScl + rotate.x - spideyLegs[leg].x;
-                legMods[leg].dy = spideyLegs[leg].y * 0.33 + (speed.components[1]*5) * spiScl + rotate.y - spideyLegs[leg].y;
+                legMods[leg].dx = rotate.x //+ (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy = rotate.y //+ (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
             } else if (dist > spideyRadius * 0.66 * Math.min(1.33, spiScl)){
             //console.log("Moving");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = -spideyLegs[leg].x * 0.33 + (speed.components[0]*5) * spiScl;
-            legMods[leg].dy = -spideyLegs[leg].y * 0.33 + (speed.components[1]*5) * spiScl;
+            legMods[leg].dx = -rotate.x// + (speed.components[0]*5) * spiScl;
+            legMods[leg].dy = -rotate.y //+ (speed.components[1]*5) * spiScl;
 
             }
         }
         
         //if the leg crosses spidey's axis reset it
-        if (legMods[mirror].anim === walking
-        && ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x)))
+        if (//legMods[mirror].anim === grabbing && 
+        ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x)))
         || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 
             || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y))))) {
             //console.log("Crossing");
@@ -2635,8 +2677,8 @@ function spideyMove(leg) {
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = (speed.components[0]*5) * spiScl + rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = (speed.components[1]*5) * spiScl + rotate.y - spideyLegs[leg].y;
+            legMods[leg].dx = rotate.x// + (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
+            legMods[leg].dy = rotate.y// + (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
         }
         
     }
@@ -3352,13 +3394,9 @@ let xrotation = 0.1;
 //do fewer Y so flip upside down is 'easier'
 let prevyrot = [
     yrotation,0,0,0,
-    yrotation,0,0,0,
-    yrotation,0,0,0,
     0,0,0,yrotation
 ];
 let prevxrot = [
-    0,0,0,xrotation,
-    0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation
 ];
@@ -4082,95 +4120,102 @@ function gravity() {
     let moveCounter = 0;
     //circle
     boundaryCircles.forEach((x) => {
-        const circRadius = x.r;
-        const circPos = {x: x.x, y: x.y};
-        // if(jactive){
-        //     if (x.solid){
-        //         context.lineWidth = 3;
-        //         context.strokeStyle = "#444444"
-        //     } else {
-        //         context.lineWidth = 1;
-        //         context.strokeStyle = "#555555"
-        //     }
-        //     if(x.half){
-        //         context.strokeHalfCircle(circPos.x, circPos.y, circRadius);
-        //     } else {
-        //         context.strokeCircle(circPos.x, circPos.y, circRadius);
-        //     }
-        // }
-        
-        const circDist = Math.sqrt(dist2({x: testPos.components[0], y: testPos.components[1]}, circPos));
-        const circDiff = {x: spideyPos.x - circPos.x, y: spideyPos.y - circPos.y};
-        const circDepth =  (circRadius - circDist + (spideyRadius)) / spideyRadius - 0.1;
-        
-        if(circDist < spideyRadius + circRadius) {
-            if(circDist < spideyRadius / 6 + circRadius) {
-                
-                //if falling grab hold
-                if(falling && !spacePressed && !shiftPressed){
-                    for(let i=0; i < spideyLegs.length; i++) {
-                        //console.log("grab")
-                        if(legMods[i].anim < grabWeb){
-                            legMods[i].anim = walking;
-                            legMods[i].start = lastTimestamp;
-                            legMods[i].x = legMods[i].jx;
-                            legMods[i].y = legMods[i].jy;
-                            legMods[i].dx = 0;
-                            legMods[i].dy = 0;
-                        }
-                        
-                    }
-                }
-                if(x.solid){
-                    // const xpush = (spideyRadius/4) - (circDist - circRadius);
-                    // const ypush = (spideyRadius/4) - (circDist - circRadius);
-                    const ypush = copySign((spideyRadius / 6) - Math.abs(circDist - circRadius), circDiff.y);
-                    const xpush = copySign((spideyRadius / 6) - Math.abs(circDist - circRadius), circDiff.x);
-                    spideyPos.x +=  xpush;
-                    spideyPos.y +=  ypush;
-                    //console.log(circDist-circRadius, spideyRadius/4, circDepth, xpush, ypush);
-                    let bouncePos = new Vector(spideyPos.x, spideyPos.y);
-                    velocity = velocity.add(bouncePos.subtract(position));
-                    if(moveCounter === 0){moveCounter++}    //stops double-bounce with line overlaps
-                        for (let i=0; i < spideyLegs.length; i++) {
-                            if(legMods[i].anim === grabbing){
-                                legMods[i].y -= ypush;
-                                legMods[i].dy -= ypush;
-                                legMods[i].x -= xpush;
-                                legMods[i].dx -= xpush;
-                            }
-                        }
-                }
-                
-                }
-                const hits = intersection({...spideyPos, r: spideyRadius * 0.66 * Math.max(1, spiScl)}, {...circPos, r: circRadius});
-                
-                if (hits.intersect_count === 2){
+        if(
+            x.x + x.r > spideyPos.x - spideyRadius*2
+            && x.x - x.r < spideyPos.x + spideyRadius*2
+            && x.y + x.r > spideyPos.y - spideyRadius*2
+            && x.y - x.r < spideyPos.y + spideyRadius*2
+        ) {
+            const circRadius = x.r;
+            const circPos = {x: x.x, y: x.y};
+            // if(jactive){
+            //     if (x.solid){
+            //         context.lineWidth = 3;
+            //         context.strokeStyle = "#444444"
+            //     } else {
+            //         context.lineWidth = 1;
+            //         context.strokeStyle = "#555555"
+            //     }
+            //     if(x.half){
+            //         context.strokeHalfCircle(circPos.x, circPos.y, circRadius);
+            //     } else {
+            //         context.strokeCircle(circPos.x, circPos.y, circRadius);
+            //     }
+            // }
+            
+            const circDist = Math.sqrt(dist2({x: testPos.components[0], y: testPos.components[1]}, circPos));
+            const circDiff = {x: spideyPos.x - circPos.x, y: spideyPos.y - circPos.y};
+            const circDepth =  (circRadius - circDist + (spideyRadius)) / spideyRadius - 0.1;
+            
+            if(circDist < spideyRadius + circRadius) {
+                if(circDist < spideyRadius / 6 + circRadius) {
                     
-                    //when hitting a circle
-                    //make 3 lines: intersect pts -> spidey * depth, +line between
-                    const grab1 = {x: hits.point_1.x - spideyPos.x, y: hits.point_1.y - spideyPos.y};
-                    const grab2 = { x: hits.point_2.x - spideyPos.x, y: hits.point_2.y - spideyPos.y};
-                    walkLines[line].valid = true;
-                    walkLines[line].p1.x = grab1.x;
-                    walkLines[line].p1.y = grab1.y;
-                    walkLines[line].p2.x = grab1.x - (grab1.x * circDepth/2);
-                    walkLines[line].p2.y = grab1.y - (grab1.y * circDepth/2);
-                    line < 16 ? line++ : line;
-                    walkLines[line].valid = true;
-                    walkLines[line].p1.x = grab2.x;
-                    walkLines[line].p1.y = grab2.y;
-                    walkLines[line].p2.x = grab2.x - (grab2.x * circDepth/2);
-                    walkLines[line].p2.y = grab2.y - (grab2.y * circDepth/2);
-                    line < 16 ? line++ : line;
-                    walkLines[line].valid = true;
-                    walkLines[line].p1.x = grab1.x - (grab1.x * circDepth/2);
-                    walkLines[line].p1.y = grab1.y - (grab1.y * circDepth/2);
-                    walkLines[line].p2.x = grab2.x - (grab2.x * circDepth/2);
-                    walkLines[line].p2.y = grab2.y - (grab2.y * circDepth/2);
-                    line < 16 ? line++ : line;
-                    //boundaryColliders.push({...walkLines[0], solid:true} )
-                    //console.log(xmov, ymov, walkLines);
+                    //if falling grab hold
+                    if(falling && !spacePressed && !shiftPressed){
+                        for(let i=0; i < spideyLegs.length; i++) {
+                            //console.log("grab")
+                            if(legMods[i].anim < grabWeb){
+                                legMods[i].anim = walking;
+                                legMods[i].start = lastTimestamp;
+                                legMods[i].x = legMods[i].jx;
+                                legMods[i].y = legMods[i].jy;
+                                legMods[i].dx = 0;
+                                legMods[i].dy = 0;
+                            }
+                            
+                        }
+                    }
+                    if(x.solid){
+                        // const xpush = (spideyRadius/4) - (circDist - circRadius);
+                        // const ypush = (spideyRadius/4) - (circDist - circRadius);
+                        const ypush = copySign((spideyRadius / 6) - Math.abs(circDist - circRadius), circDiff.y);
+                        const xpush = copySign((spideyRadius / 6) - Math.abs(circDist - circRadius), circDiff.x);
+                        spideyPos.x +=  xpush;
+                        spideyPos.y +=  ypush;
+                        //console.log(circDist-circRadius, spideyRadius/4, circDepth, xpush, ypush);
+                        let bouncePos = new Vector(spideyPos.x, spideyPos.y);
+                        velocity = velocity.add(bouncePos.subtract(position));
+                        if(moveCounter === 0){moveCounter++}    //stops double-bounce with line overlaps
+                            for (let i=0; i < spideyLegs.length; i++) {
+                                if(legMods[i].anim === grabbing){
+                                    legMods[i].y -= ypush;
+                                    legMods[i].dy -= ypush;
+                                    legMods[i].x -= xpush;
+                                    legMods[i].dx -= xpush;
+                                }
+                            }
+                    }
+                    
+                    }
+                    const hits = intersection({...spideyPos, r: spideyRadius * 0.66 * Math.max(1, spiScl)}, {...circPos, r: circRadius});
+                    
+                    if (hits.intersect_count === 2){
+                        
+                        //when hitting a circle
+                        //make 3 lines: intersect pts -> spidey * depth, +line between
+                        const grab1 = {x: hits.point_1.x - spideyPos.x, y: hits.point_1.y - spideyPos.y};
+                        const grab2 = { x: hits.point_2.x - spideyPos.x, y: hits.point_2.y - spideyPos.y};
+                        walkLines[line].valid = true;
+                        walkLines[line].p1.x = grab1.x;
+                        walkLines[line].p1.y = grab1.y;
+                        walkLines[line].p2.x = grab1.x - (grab1.x * circDepth/2);
+                        walkLines[line].p2.y = grab1.y - (grab1.y * circDepth/2);
+                        line < 16 ? line++ : line;
+                        walkLines[line].valid = true;
+                        walkLines[line].p1.x = grab2.x;
+                        walkLines[line].p1.y = grab2.y;
+                        walkLines[line].p2.x = grab2.x - (grab2.x * circDepth/2);
+                        walkLines[line].p2.y = grab2.y - (grab2.y * circDepth/2);
+                        line < 16 ? line++ : line;
+                        walkLines[line].valid = true;
+                        walkLines[line].p1.x = grab1.x - (grab1.x * circDepth/2);
+                        walkLines[line].p1.y = grab1.y - (grab1.y * circDepth/2);
+                        walkLines[line].p2.x = grab2.x - (grab2.x * circDepth/2);
+                        walkLines[line].p2.y = grab2.y - (grab2.y * circDepth/2);
+                        line < 16 ? line++ : line;
+                        //boundaryColliders.push({...walkLines[0], solid:true} )
+                        //console.log(xmov, ymov, walkLines);
+                    }
                 }
             }
         })
@@ -4196,6 +4241,7 @@ function gravity() {
         }
 
         //lines 
+
         boundaryColliders.forEach((x) => {
         // if(jactive){
         //     if (x.solid){
@@ -4210,141 +4256,146 @@ function gravity() {
         //     context.lineTo(x.p2.x, x.p2.y);
         //     context.stroke();
         // }
-        
-            //A, B, C, r
-            if(doesLineInterceptCircle(x.p1, x.p2, spideyPos, spideyRadius)){
-                //console.log(interceptCircleLineSeg(circle, line));
-                const intercepts = interceptCircleLineSeg(circle, x);
-                if (line > 15) {
-                    const distA = distToSegmentSquared(spideyPos, x.p1, x.p2);
-                    const distB = distToSegmentSquared({x:0,y:0}, walkLines[15].p1, walkLines[15].p2);
-                    if (distA < distB){ 
-                        line = 15;
-                        };
-                }
-                const distD = distToSegment(spideyPos, x.p1, x.p2);
-                if (distD < (spideyRadius / 4)) {
-                    //if falling grab hold
-                    if(falling && !spacePressed && !shiftPressed){
-                        for(let i=0; i < spideyLegs.length; i++) {
-                            //console.log("grab");
-                        if(legMods[i].anim < grabWeb){
-                            legMods[i].anim = walking;
-                            //init bug? 
-                            legMods[i].start = lastTimestamp > 0? lastTimestamp : 0;
-                            legMods[i].x = legMods[i].jx;
-                            legMods[i].y = legMods[i].jy;
-                            legMods[i].dx = 0;
-                            legMods[i].dy = 0;
-                        }
+            if(
+                Math.max(x.p1.x, x.p2.x) > spideyPos.x - spideyRadius
+                && Math.min(x.p1.x, x.p2.x) < spideyPos.x + spideyRadius
+                && Math.max(x.p1.y, x.p2.y) > spideyPos.y - spideyRadius
+                && Math.min(x.p1.y, x.p2.y) < spideyPos.y + spideyRadius
+            ) {
+                //A, B, C, r
+                if(doesLineInterceptCircle(x.p1, x.p2, spideyPos, spideyRadius)){
+                    //console.log(interceptCircleLineSeg(circle, line));
+                    const intercepts = interceptCircleLineSeg(circle, x);
+                    if (line > 15) {
+                        const distA = distToSegmentSquared(spideyPos, x.p1, x.p2);
+                        const distB = distToSegmentSquared({x:0,y:0}, walkLines[15].p1, walkLines[15].p2);
+                        if (distA < distB){ 
+                            line = 15;
+                            };
+                    }
+                    const distD = distToSegment(spideyPos, x.p1, x.p2);
+                    if (distD < (spideyRadius / 4)) {
+                        //if falling grab hold
+                        if(falling && !spacePressed && !shiftPressed){
+                            for(let i=0; i < spideyLegs.length; i++) {
+                                //console.log("grab");
+                            if(legMods[i].anim < grabWeb){
+                                legMods[i].anim = walking;
+                                //init bug? 
+                                legMods[i].start = lastTimestamp > 0? lastTimestamp : 0;
+                                legMods[i].x = legMods[i].jx;
+                                legMods[i].y = legMods[i].jy;
+                                legMods[i].dx = 0;
+                                legMods[i].dy = 0;
+                            }
+                            }
                         }
                     }
-                }
 
-                if (line < 16) {
-                    //console.log(line, intercepts, walkLines)
-                    walkLines[line].valid = true;
-                    if(intercepts.length === 0) {
-                        //console.log("Line is inside circle!");
-                        walkLines[line].p1 = {x: x.p1.x - spideyPos.x, y: x.p1.y - spideyPos.y};
-                        walkLines[line].p2 = {x: x.p2.x - spideyPos.x, y: x.p2.y - spideyPos.y};
-                        //context.fillCircle(x.p1.x, x.p1.y, 3);
-                        //context.fillCircle(x.p2.x, x.p2.y, 3);
-                    }
-                    if(intercepts.length > 0) {
-                        walkLines[line].p1 = {x: intercepts[0].x - spideyPos.x, y: intercepts[0].y - spideyPos.y};
-                        walkLines[line].p2 = {x: intercepts[0].x - spideyPos.x, y: intercepts[0].y - spideyPos.y};
-                        //debug
-                        //context.fillCircle(intercepts[0].x, intercepts[0].y, 3);
-                        if(intercepts.length > 1) {
-                            walkLines[line].p2 = {x: intercepts[1].x - spideyPos.x, y: intercepts[1].y - spideyPos.y}
+                    if (line < 16) {
+                        //console.log(line, intercepts, walkLines)
+                        walkLines[line].valid = true;
+                        if(intercepts.length === 0) {
+                            //console.log("Line is inside circle!");
+                            walkLines[line].p1 = {x: x.p1.x - spideyPos.x, y: x.p1.y - spideyPos.y};
+                            walkLines[line].p2 = {x: x.p2.x - spideyPos.x, y: x.p2.y - spideyPos.y};
+                            //context.fillCircle(x.p1.x, x.p1.y, 3);
+                            //context.fillCircle(x.p2.x, x.p2.y, 3);
+                        }
+                        if(intercepts.length > 0) {
+                            walkLines[line].p1 = {x: intercepts[0].x - spideyPos.x, y: intercepts[0].y - spideyPos.y};
+                            walkLines[line].p2 = {x: intercepts[0].x - spideyPos.x, y: intercepts[0].y - spideyPos.y};
                             //debug
-                            //context.fillCircle(intercepts[1].x, intercepts[1].y, 3);
-                            //console.log(line, walkLines)
-                        } else {
-                            //console.log("Line end within circle!")
-                            const d1 = dist2(x.p1, spideyPos);
-                            const d2 = dist2(x.p2, spideyPos);
-                            let closest;
+                            //context.fillCircle(intercepts[0].x, intercepts[0].y, 3);
+                            if(intercepts.length > 1) {
+                                walkLines[line].p2 = {x: intercepts[1].x - spideyPos.x, y: intercepts[1].y - spideyPos.y}
+                                //debug
+                                //context.fillCircle(intercepts[1].x, intercepts[1].y, 3);
+                                //console.log(line, walkLines)
+                            } else {
+                                //console.log("Line end within circle!")
+                                const d1 = dist2(x.p1, spideyPos);
+                                const d2 = dist2(x.p2, spideyPos);
+                                let closest;
+                                //
+                                d1 < d2 ? closest = x.p1 : closest = x.p2;
+                                walkLines[line].p2 = {x: closest.x - spideyPos.x, y: closest.y - spideyPos.y}
+                                //context.fillCircle(closest.x, closest.y, 3);
+                            }
+                        }
+                    if(x.solid) {
+                        const testx = testPos.components[0];
+                        const testy = testPos.components[1];
+                        const bounce = intercepts.length === 1;
+                        const distC = distToSegment({x: testx, y: testy}, {x: walkLines[line].p1.x + spideyPos.x, 
+                            y: walkLines[line].p1.y + spideyPos.y}, {x: walkLines[line].p2.x + spideyPos.x, 
+                            y: walkLines[line].p2.y + spideyPos.y});
+
+                            if (distC < (spideyRadius / 6)) {
+
+                            //enforce distance 
                             //
-                            d1 < d2 ? closest = x.p1 : closest = x.p2;
-                            walkLines[line].p2 = {x: closest.x - spideyPos.x, y: closest.y - spideyPos.y}
-                            //context.fillCircle(closest.x, closest.y, 3);
-                        }
-                    }
-                if(x.solid) {
-                    const testx = testPos.components[0];
-                    const testy = testPos.components[1];
-                    const bounce = intercepts.length === 1;
-                    const distC = distToSegment({x: testx, y: testy}, {x: walkLines[line].p1.x + spideyPos.x, 
-                        y: walkLines[line].p1.y + spideyPos.y}, {x: walkLines[line].p2.x + spideyPos.x, 
-                        y: walkLines[line].p2.y + spideyPos.y});
+                            let pointOne = intercepts[0];
+                            let pointTwo = intercepts[1];
+                            if (intercepts.length === 0){
+                                //console.log("inside")
+                                pointOne = {x: walkLines[line].p1.x + spideyPos.x, 
+                                    y: walkLines[line].p1.y + spideyPos.y}
+                                pointTwo = {x: walkLines[line].p2.x + spideyPos.x, 
+                                    y: walkLines[line].p2.y + spideyPos.y}
+                            }
+                            if (bounce) {
+                                //console.log("1PT")
+                                pointTwo = {x: walkLines[line].p2.x + spideyPos.x, 
+                                    y: walkLines[line].p2.y + spideyPos.y}
+                            }
+                            const nearest = closestSegmentPoint({x: testx, y: testy}, pointOne, pointTwo);
+                            const dx = spideyPos.x - nearest.x;
+                            const dy = spideyPos.y - nearest.y;
+                            const ypush = copySign((spideyRadius / 6) - Math.abs(dy), dy)
+                            const xpush = copySign((spideyRadius / 6) - Math.abs(dx), dx)
 
-                        if (distC < (spideyRadius / 6)) {
-
-                        //enforce distance 
-                        //
-                        let pointOne = intercepts[0];
-                        let pointTwo = intercepts[1];
-                        if (intercepts.length === 0){
-                            //console.log("inside")
-                            pointOne = {x: walkLines[line].p1.x + spideyPos.x, 
-                                y: walkLines[line].p1.y + spideyPos.y}
-                            pointTwo = {x: walkLines[line].p2.x + spideyPos.x, 
-                                y: walkLines[line].p2.y + spideyPos.y}
-                        }
-                        if (bounce) {
-                            //console.log("1PT")
-                            pointTwo = {x: walkLines[line].p2.x + spideyPos.x, 
-                                y: walkLines[line].p2.y + spideyPos.y}
-                        }
-                        const nearest = closestSegmentPoint({x: testx, y: testy}, pointOne, pointTwo);
-                        const dx = spideyPos.x - nearest.x;
-                        const dy = spideyPos.y - nearest.y;
-                        const ypush = copySign((spideyRadius / 6) - Math.abs(dy), dy)
-                        const xpush = copySign((spideyRadius / 6) - Math.abs(dx), dx)
-
-                            //console.log(distC, dx, dy);
-                            // console.log(pointTwo);
-                            //console.log(xpush, ypush);
-                        if (Math.abs(dy) > EPSILON && Math.abs(dy) > Math.abs(dx)) {
-                            spideyPos.y += ypush;
-                            //setSpeed(0, -speed.components[1] / ());
-                            for (let i=0; i < spideyLegs.length; i++) {
-                                if(legMods[i].anim === grabbing){
-                                    legMods[i].y -= ypush;
-                                    legMods[i].dy -= ypush;
+                                //console.log(distC, dx, dy);
+                                // console.log(pointTwo);
+                                //console.log(xpush, ypush);
+                            if (Math.abs(dy) > EPSILON && Math.abs(dy) > Math.abs(dx)) {
+                                spideyPos.y += ypush;
+                                //setSpeed(0, -speed.components[1] / ());
+                                for (let i=0; i < spideyLegs.length; i++) {
+                                    if(legMods[i].anim === grabbing){
+                                        legMods[i].y -= ypush;
+                                        legMods[i].dy -= ypush;
+                                    }
+                                    
                                 }
-                                
+                            }
+                            if (Math.abs(dx) > EPSILON && Math.abs(dx) > Math.abs(dy)) {
+                                spideyPos.x += xpush;
+                                //setSpeed(-speed.components[0], 0);
+                                for (let i=0; i < spideyLegs.length; i++) {
+                                    legMods[i].x -= xpush;
+                                    legMods[i].dx -= xpush;
+                                }
+                            }
+                            
+                            //we only change velocity on primary collision
+                            //prevents bouncing + phasing bugs 
+                            if (moveCounter === 0){
+                                let bouncePos = new Vector(spideyPos.x, spideyPos.y);
+                                velocity = velocity.add(bouncePos.subtract(position));
+                                // console.log(velocity);
+                                moveCounter++
                             }
                         }
-                        if (Math.abs(dx) > EPSILON && Math.abs(dx) > Math.abs(dy)) {
-                            spideyPos.x += xpush;
-                            //setSpeed(-speed.components[0], 0);
-                            for (let i=0; i < spideyLegs.length; i++) {
-                                legMods[i].x -= xpush;
-                                legMods[i].dx -= xpush;
-                            }
-                        }
-                        
-                        //we only change velocity on primary collision
-                        //prevents bouncing + phasing bugs 
-                        if (moveCounter === 0){
-                            let bouncePos = new Vector(spideyPos.x, spideyPos.y);
-                            velocity = velocity.add(bouncePos.subtract(position));
-                            // console.log(velocity);
-                            moveCounter++
-                        }
+                    
                     }
-                
+                    
                 }
-                
-            }
-                //increment line
-                line++
+                    //increment line
+                    line++
+                }
             }
     })
-
     webArray.forEach((x, j) => {
         
         
@@ -4463,7 +4514,7 @@ function drawProjectiles(){
                 && (checkCollision(x.x, x.y, 5) > -1 || checkWebCollision(x.x, x.y, 5) > -1)) {
                 //if big radius is a hit, do precise step-checking
                 let web = -1;
-                for(let i=1; i<20; i++){
+                for(let i=1; i<16; i++){
                     const stepx = x.x - (changex / i);
                     const stepy = x.y - (changey / i);
                     web = checkWebCollision(stepx, stepy, 1.5)
@@ -4789,6 +4840,7 @@ function drawWebs(){
 
 let velocity = new Vector(0, 0)
 let acceleration = new Vector(0, 0)
+let impulse = new Vector(0, 0)
 
 
 function setSpeed(x, y) {
@@ -4796,6 +4848,8 @@ function setSpeed(x, y) {
     //ymov = Math.min(1, Math.max( -1, y));
     acceleration = acceleration.add(new Vector((x / 10) * deltaTime, (y / 10) * deltaTime))
     velocity = velocity.add(acceleration);
+    //console.log("setspeed", velocity.length(), spideyRadius/3)
+    //aaif (velocity.length() > spideyRadius/3) velocity = velocity.scaleBy(spideyRadius/3 / velocity.length());
     speed = velocity;
     // console.log(acceleration.components, velocity.components)
     // console.log(speed.components[0], speed.components[1]);
@@ -4879,19 +4933,19 @@ function drawEnemies(){
     
     if (!startgame && (enemies.length === 0 || enemies.every((x) => {return !x.active}))) {
        //enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
-       enemies.push({type: 2, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
+       enemies.push({type: 2, r: 60, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
         for(let i=0;i<1001;i++){
             //enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
-            enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
+            enemies.push({type: 0, r: 9, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
 
         }
     }
     enemies.forEach((x) => {
         if(x.active
-            && x.x > spideyPos.x - viewport.width
-            && x.x < spideyPos.x + viewport.width
-            && x.y > spideyPos.y - viewport.height
-            && x.y < spideyPos.y + viewport.height){
+            && x.x + x.r > cameraPos.x - viewport.width*0.5/worldScale
+            && x.x - x.r < cameraPos.x + viewport.width*0.5/worldScale
+            && x.y + x.r > cameraPos.y - viewport.height*0.5/worldScale
+            && x.y - x.r < cameraPos.y + viewport.height*0.5/worldScale){
             //animate
             switch (x.type){
                 case 0:
@@ -4908,31 +4962,38 @@ function drawEnemies(){
         }
         
     })
+    
 }
 
-//const objworker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-// const overflowHWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-// const overflowVWorker = window.Worker ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
-function paintObjs(x){
-    switch (x.type){
-        case ground:
-            paintGround(x.id, x.length); 
-            break
-        case rockMed:
-            paintRockMed(x.id, x.length); 
-            break
-        case stopSign:
-            paintStopSign(x.id, x.length);  
-            break
-        case tree:
-            paintTree(x.id, x.length, x.circID, x.circLen);  
-            break
-        case cactus:
-            paintCactus(x.id, x.length, x.circID, x.circLen);  
-            break
-        case flower:
-            paintFlower(x.id, x.length, x.circID, x.circLen);  
-            break
+const objworker = threads ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+// const overflowHWorker = threads ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+// const overflowVWorker = threads ? new Worker(new URL("./worker_objs.js", import.meta.url)) : undefined;
+function paintObjs(x, bgXoffset, bgYoffset, clip, overX, overY){
+    if (threads){
+        const lines = boundaryColliders.slice(x.id, x.id + x.length);
+        const circ = boundaryCircles.slice(x.circID, x.circID + x.circLen);
+        objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale, obj: x, lines: lines, circ: circ, clip: clip, overX: overX, overY: overY}])
+    } else {
+        switch (x.type){
+            case ground:
+                paintGround(x.id, x.length); 
+                break
+            case rockMed:
+                paintRockMed(x.id, x.length); 
+                break
+            case stopSign:
+                paintStopSign(x.id, x.length);  
+                break
+            case tree:
+                paintTree(x.id, x.length, x.circID, x.circLen);  
+                break
+            case cactus:
+                paintCactus(x.id, x.length, x.circID, x.circLen);  
+                break
+            case flower:
+                paintFlower(x.id, x.length, x.circID, x.circLen);  
+                break
+        }
     }}
 //new:
 //check workers are valid
@@ -4957,71 +5018,31 @@ function drawObjects(bgXoffset, bgYoffset){
         //console.log(overdraw + Math.abs(overX), overdraw + Math.abs(overY), bgOverflow+viewport.width, bgOverflow+viewport.height)
         bgctx.beginPath();
         bgctx.rect(0,0,background.width/worldScale,background.height/worldScale);
-        bgctx.moveTo(overdraw/worldScale + Math.abs(overX)*worldScale, overdraw/worldScale + Math.abs(overY)*worldScale);
-        bgctx.lineTo(overdraw/worldScale + Math.abs(overX)*worldScale, bgOverflow/worldScale+viewport.height/worldScale)
-        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale+viewport.height/worldScale)
-        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, overdraw/worldScale + Math.abs(overY)*worldScale)
+        bgctx.moveTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), overdraw/worldScale + Math.abs(Math.round(overY*worldScale)));
+        bgctx.lineTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), bgOverflow/worldScale + viewport.height/worldScale)
+        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale + viewport.height/worldScale)
+        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, overdraw/worldScale + Math.abs(Math.round(overY*worldScale)))
         bgctx.clip();
         //bgctx.fill();
         bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
+        const shiftX = (Math.round(overX*worldScale));
+        const shiftY = (Math.round(overY*worldScale));
         
         for(let i=0; drawBuffer.length > 0 && i<8; i++){
             const x = drawBuffer.shift();
             //console.log("drawing", x.type)
             //animate
-            paintObjs(x);
+            paintObjs(x, -bgXoffset + overX, -bgYoffset + overY, 1, copySign(overdraw, shiftX), copySign(overdraw, shiftY));
         }
         bgctx.restore();
-        //bgctx.drawImage(cbackground, bgOverflow, bgOverflow, viewport.width*worldScale, viewport.height*worldScale, bgOverflow/worldScale, bgOverflow/worldScale, viewport.width, viewport.height);
-        // bgctx.drawImage(cbackground, 
-        //     //source XY
-        //     bgOverflow-Math.abs((overX)*worldScale), bgOverflow-Math.abs((overY)*worldScale),
-        //     //source WH
-        //     viewport.width+Math.abs((overX)*worldScale), viewport.height+Math.abs((overY)*worldScale),
-        //     //dest XY 
-        //     (bgOverflow/worldScale)-Math.abs((overX)), (bgOverflow/worldScale)-Math.abs((overY)), 
-        //     //dest WH
-        //     (viewport.width / worldScale)+Math.abs((overX)), (viewport.height / worldScale)+Math.abs((overY))
-        // );
+
     }
     if(
         (Math.abs(overX)*worldScale > overdraw || Math.abs(overY)*worldScale > overdraw)
     ) {
-        //console.log("Overdraw", overX, overY, bgXoffset, bgYoffset)
-        if (window.Worker && 0) {
-
-                //console.log("OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-                objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale}]); 
-            
-            // //draw full bg
-            // if(Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
-            // // ofctx.drawImage(background, 
-            // //     bgOverflow-overX,bgOverflow-overY,
-            // //     w * worldScale, h * worldScale, 0, 0,
-            // //     w, h)
-            // //draw side bg 
-            // } else if (Math.abs(overX) > overdraw) {
-            //     console.log("OverdrawX", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-            //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale,}
-            //         , spideyPos.x - viewport.width*0.5,
-            //          spideyPos.x + viewport.width*0.5,
-            //           spideyPos.y - viewport.height*0.5,
-            //            spideyPos.y + viewport.height*0.5]); 
-            // //draw top/bottom bg 
-            // } else if (Math.abs(overY) > overdraw) {
-            //     console.log("OverdrawY", "OFFX", spideyPos.x - bgOffset.x, "OFFY", spideyPos.y - bgOffset.y)
-            //     objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale},
-            //          spideyPos.x - viewport.width*0.5,
-            //           spideyPos.x + viewport.width*0.5,
-            //            spideyPos.y - viewport.height*0.5,
-            //             spideyPos.y + viewport.height*0.5]); 
-            // }
-            bgOffset.x = spideyPos.x;
-            bgOffset.y = spideyPos.y;
-        } else {
-        
+        console.log("Overdraw", overX, overY, bgXoffset, bgYoffset)
             //draw whole bg
-            if (Math.abs(overX) > viewport.width || Math.abs(overY) > viewport.height) {
+            if ((Math.abs(overX)*worldScale > viewport.width || Math.abs(overY)*worldScale > viewport.height)) {
                 bgctx.save();
                 bgctx.translate(-bgXoffset, -bgYoffset);
                 
@@ -5029,7 +5050,13 @@ function drawObjects(bgXoffset, bgYoffset){
                 bgctx.fillStyle = sky;
                 // bgctx.fillStyle = "639AFF";
 
-                bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
+                if(threads){
+                    objworker.postMessage("clear")
+                    //objworker.postMessage([{x: bgXoffset, y: bgYoffset, s: worldScale, obj: -1}]);
+                } else {
+                    bgctx.fillRect(spideyPos.x - bgctx.width, spideyPos.y - bgctx.height, bgctx.width*2, bgctx.height*2);
+                }
+                
                 scnObj.forEach((x) => {
                 if(x.max.x > spideyPos.x - background.width
                     && x.min.x < spideyPos.x + background.width
@@ -5037,7 +5064,7 @@ function drawObjects(bgXoffset, bgYoffset){
                     && x.min.y < spideyPos.y + background.height
                     ){
                     //console.log("DRAWBG")
-                    paintObjs(x);
+            paintObjs(x, -bgXoffset, -bgYoffset);
                 }
             })
             bgctx.restore();
@@ -5049,32 +5076,50 @@ function drawObjects(bgXoffset, bgYoffset){
             
             // const overdrawY = (spideyPos.y > viewport.height * 0.5 && spideyPos.y < worldSize.height - viewport.height * 0.5) ? Math.round(overY) : 0;
 
-            bgctx.drawImage(background, Math.round(overX * worldScale), Math.round(overY * worldScale), bgw * worldScale, bgh * worldScale, 0, 0, bgw, bgh);
-            //cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
-            //bgctx.fillRect(0,0,bgw, bgh);
+            if(threads){
+                //objworker.postMessage("clear")
+                objworker.postMessage(["move", Math.round(overX * worldScale), Math.round(overY * worldScale)])
+                paintObjs(scnObj[0], -bgXoffset, -bgYoffset, 1, Math.round(overX * worldScale), Math.round(overY * worldScale))
+            
+            } else {
+                bgctx.drawImage(background, Math.round(overX * worldScale), Math.round(overY * worldScale), bgw * worldScale, bgh * worldScale, 0, 0, bgw, bgh);
+                //cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
+                //bgctx.fillRect(0,0,bgw, bgh);
 
-            bgctx.save();
-            bgctx.translate(-bgXoffset, -bgYoffset);
-            bgctx.fillStyle = sky;
-            //top bar
-            if (overY < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgw/worldScale, Math.ceil(Math.abs(overY)));
-            //left bar
-            if (overX < 0) bgctx.fillRect(bgXoffset, bgYoffset,Math.ceil(Math.abs(overX)), bgh/worldScale);
-            //bottom bar
-            if (overY > 0) bgctx.fillRect(bgXoffset, bgYoffset+bgh/worldScale-Math.ceil(Math.abs(overY)), bgw/worldScale, bgOverflow);
-            //right bar
-            if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-Math.ceil(Math.abs(overX)), bgYoffset, bgOverflow, bgh/worldScale); 
-
+                bgctx.save();
+                bgctx.beginPath();
+                bgctx.rect(0,0,background.width/worldScale,background.height/worldScale);
+                bgctx.moveTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), overdraw/worldScale + Math.abs(Math.round(overY*worldScale)));
+                bgctx.lineTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), bgOverflow/worldScale + viewport.height/worldScale)
+                bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale + viewport.height/worldScale)
+                bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, overdraw/worldScale + Math.abs(Math.round(overY*worldScale)))
+                bgctx.clip();
+                bgctx.translate(-bgXoffset, -bgYoffset);
+                bgctx.fillStyle = sky;
+                //top bar
+                if (overY < 0) bgctx.fillRect(bgXoffset, bgYoffset,bgw/worldScale, Math.ceil(Math.abs(overY)));
+                //left bar
+                if (overX < 0) bgctx.fillRect(bgXoffset, bgYoffset,Math.ceil(Math.abs(overX)), bgh/worldScale);
+                //bottom bar
+                if (overY > 0) bgctx.fillRect(bgXoffset, bgYoffset+bgh/worldScale-Math.ceil(Math.abs(overY)), bgw/worldScale, bgOverflow);
+                //right bar
+                if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-Math.ceil(Math.abs(overX)), bgYoffset, bgOverflow, bgh/worldScale); 
+           
+                bgOffset.x = cameraPos.x;
+                bgOffset.y = cameraPos.y;
+            }
+            
             //clear anything that hasnt been drawn in the buffer yet :(
         for(let i=0; drawBuffer.length > 0; i++){
             const x = drawBuffer.shift();
-            //console.log("Clearing... ", i)
+            console.log("Clearing... ", i)
             //animate
-            paintObjs(x);
+            paintObjs(x, -bgXoffset, -bgYoffset, 0);
         }
             //paintGround(0, 1); 
             bgctx.restore();
-            scnObj.forEach((x) => {
+            //drawBuffer.push(scnObj[0]); // ground
+            scnObj.forEach((x, i) => {
                 if(
                     //draw + X overflow
                     (overX > 0 && 
@@ -5108,12 +5153,11 @@ function drawObjects(bgXoffset, bgYoffset){
                     drawBuffer.push(x);
                 }
             })
-            
         }
             //bgctx.restore();
             bgOffset.x = cameraPos.x;
             bgOffset.y = cameraPos.y;
-        }
+        
     }
 }
 
@@ -5233,7 +5277,7 @@ let dashCoolDown = -9990;
 
 let startgame = true;
 
-newGame();
+// newGame();
 // initScene();
 // addBoundaries();
 let firstclick = 0;
@@ -5530,7 +5574,6 @@ function update(timestamp) {
         const bgYoffset = Math.max(0, Math.min(spideyPos.y - bgh*0.5, worldSize.height - bgh));
         
         drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
-
         const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x - bgw*0.5), worldSize.width - bgw)));
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y - bgh*0.5), worldSize.height - bgh)));
         
@@ -5541,6 +5584,8 @@ function update(timestamp) {
                 (overdrawX * worldScale) + bgOverflow, (overdrawY * worldScale) + bgOverflow,
                 w * worldScale, h * worldScale, 0, 0,
             w, h)
+
+        
 
         // context.drawImage(background, 0, 0,
         //     w * worldScale, h * worldScale, 0, 0,
@@ -5643,11 +5688,12 @@ function processInput () {
             const grav = falling && speed.components[1] >= -1 ? 2 : 0
                 let speedx = speed.components[0] * 8 * spiScl;
                 let speedy = (speed.components[1] - grav) * 8 * spiScl;
+                //console.log(speedx, speedy)
                 if((LMBHeld || RMBHeld) && cursorPos.length() > spideyRadius*0.5) {
                     speedx = cursorPos.components[0];
                     speedy = cursorPos.components[1] - grav;
                 }
-                setSpeed(speedx/deltaTime, speedy/deltaTime);
+                setSpeed(Math.min(spideyRadius, speedx)/deltaTime, Math.min(spideyRadius, speedy)/deltaTime);
             }
         }
     }
@@ -5891,7 +5937,7 @@ function newGame(){
         drawMobileUI();
     }
     scaleSpidey(50);
-    scaleWorld(3);
+    scaleWorld(1);
     startgame = false;
     skipMouseInput = true;
     initScene();
@@ -5900,17 +5946,24 @@ function newGame(){
     for(let i=0; i<spideyLegs.length; i++){
         legMods[i].anim = walking;
     }
-    
-    //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [offscreen]);
+   
+     if (threads){
+        objworker.postMessage({canvas: offscreen, width: window.innerWidth, height: window.innerHeight}, [offscreen]);
+        objworker.onmessage = function(event){
+            //document.getElementById("result").innerHTML = event.data;
+            // if (event.data === "moved") {
+                
+            //     bgOffset.x = cameraPos.x;
+            //     bgOffset.y = cameraPos.y;
+            // }
+            console.log(event.data)
+        };
+    }
     //objworker.postMessage({canvas: offscreen, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0], x: spideyPos.x, y: spideyPos.y, s: worldScale}, [offscreen]);
     // overflowHWorker.postMessage({canvas: overflowH, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowH]);
     // overflowVWorker.postMessage({canvas: overflowV, scnObj:scnObj, boundaryCircles:boundaryCircles, boundaryColliders:boundaryColliders, areaBoxes: areaBoxes[0]}, [overflowV]);
-    // objworker.onmessage = function(event){
-    //     //document.getElementById("result").innerHTML = event.data;
-    //     console.log(event.data)
-    // };
-}
 
+}
 function initScene(){
     layWeb = false;
     legMods.forEach((x)=>{

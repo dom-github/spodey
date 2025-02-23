@@ -1,6 +1,7 @@
-let canvas, bgctx, scnObj, boundaryCircles, boundaryColliders, areaBoxes, worldScale, cameraX, cameraY;
+let canvas, bgctx, scnObj, boundaryCircles, boundaryColliders, areaBoxes, worldScale, cameraX, cameraY, clip, overX, overY;
 
 let worldSize = {width: 15360, height: 6666};
+let viewport = {width: 0, height: 0}
 
 const ground = 0;
 const rockMed = 1;
@@ -8,6 +9,9 @@ const stopSign = 2;
 const cactus = 3;
 const tree = 4;
 const flower = 5;
+
+const bgOverflow = 512;
+const overdraw = bgOverflow*0.5;
 
 function mulberry32(a) {
     return function() {
@@ -29,64 +33,89 @@ onmessage = function(event){
     //     bgctx.restore();
     // } else
 
-    if(!event.data.canvas){ 
+    if(event.data[0] === "move"){ 
+        bgctx.drawImage(canvas, event.data[1], event.data[2], canvas.width * worldScale, canvas.height * worldScale, 0, 0, bgctx.width, bgctx.height);
+        this.postMessage("moved");
+    }
+    else if(event.data === "clear"){ 
+        bgctx.clearRect(0,0,bgctx.width, bgctx.height)
+    }
+    else if(!event.data.canvas){ 
         //render()
-        cameraX = event.data[0].x
-        cameraY = event.data[0].y
+        cameraX = event.data[0].x;
+        cameraY = event.data[0].y;
+        scnObj = event.data[0].obj;
+        boundaryCircles = event.data[0].circ;
+        boundaryColliders = event.data[0].lines;
+        clip = event.data[0].clip; 
+        overX = event.data[0].overX; 
+        overY = event.data[0].overY; 
         if(worldScale !== event.data[0].s){
             bgctx.scale(1/worldScale, 1/worldScale);
             worldScale = event.data[0].s;
             bgctx.scale(worldScale, worldScale);
+            viewport.width *= worldScale;
+            viewport.height *= worldScale;
         }
-        requestAnimationFrame(render);
+        render();
         
     } else {
         canvas = event.data.canvas;
         bgctx = canvas.getContext("2d", { alpha: false });
-        scnObj = event.data.scnObj;
-        boundaryCircles = event.data.boundaryCircles;
-        boundaryColliders = event.data.boundaryColliders;
-        areaBoxes = event.data.areaBoxes;
+        bgctx.width = event.data.width + bgOverflow*2;
+        bgctx.height = event.data.height + bgOverflow*2;
+        canvas.width = event.data.width + bgOverflow*2;
+        canvas.height = event.data.height + bgOverflow*2;
+        viewport.width = event.data.width;
+        viewport.height = event.data.height;
+        // scnObj = event.data.scnObj;
+        // boundaryCircles = event.data.boundaryCircles;
+        // boundaryColliders = event.data.boundaryColliders;
+        // areaBoxes = event.data.areaBoxes;
         //
     }
 
 
 };
 
-function render(time) {
+function render() {
     bgctx.save();
-    bgctx.translate(-cameraX, -cameraY);
-    scnObj.forEach((x) => {
-        if(x.type === ground){
-                //          
-                paintGround(x.id, x.length);  
-            }
-        if(
-            x.max.x > cameraX - canvas.width * worldScale//spideyPos.x - viewport.width - overdraw
-            && x.min.x < cameraX + canvas.width * worldScale//spideyPos.x + viewport.width + overdraw
-            && x.max.y > cameraY - canvas.height * worldScale//spideyPos.y - viewport.height - overdraw
-            && x.min.y < cameraY + canvas.height * worldScale//spideyPos.y + viewport.height + overdraw
-        ){
+    if(clip) {
+        const minX = overX < 0 && scnObj.type !== ground? overdraw/worldScale : 0;
+        const maxX =  overX > 0 && scnObj.type !== ground ? overdraw/worldScale : 0;
+        const minY =  overY < 0 && scnObj.type !== ground ? overdraw/worldScale : 0;
+        const maxY =  overY > 0 && scnObj.type !== ground ? overdraw/worldScale : 0;
+        bgctx.beginPath();
+        bgctx.rect(0,0,bgctx.width/worldScale,bgctx.height/worldScale);
+        bgctx.moveTo(minX + Math.abs(Math.min(0, overX/worldScale)), minY + Math.abs(Math.min(0,overY/worldScale)));
+        bgctx.lineTo(minX + Math.abs(Math.min(0, overX/worldScale)), bgctx.height/worldScale - (maxY + Math.max(0, overY/worldScale)));
+        bgctx.lineTo(bgctx.width/worldScale - (maxX + Math.max(0, overX/worldScale)), bgctx.height/worldScale - (maxY + Math.max(0, overY/worldScale)));
+        bgctx.lineTo(bgctx.width/worldScale - (maxX + Math.max(0, overX/worldScale)), minY + Math.abs(Math.min(0,overY/worldScale)));
+    
+        bgctx.clip();
+    }
+    bgctx.translate(cameraX, cameraY);
             //animate
-            switch (x.type){
+            switch (scnObj.type){
+                case ground:
+                    paintGround(); 
+                    break
                 case rockMed:
-                    paintRockMed(x.id, x.length); 
+                    paintRockMed(0, scnObj.length); 
                     break
                 case stopSign:
-                    paintStopSign(x.id, x.length);  
+                    paintStopSign(0, scnObj.length);  
                     break
                 case tree:
-                    paintTree(x.id, x.length, x.circID, x.circLen);  
+                    paintTree(0, scnObj.length, 0, scnObj.circLen);  
                     break
                 case cactus:
-                    paintCactus(x.id, x.length, x.circID, x.circLen);  
+                    paintCactus(0, scnObj.length, 0, scnObj.circLen);  
                     break
                 case flower:
-                    paintFlower(x.id, x.length, x.circID, x.circLen);  
+                    paintFlower(0, scnObj.length, 0, scnObj.circLen);  
                     break
             }
-        }
-    })
     bgctx.restore();    
     
     //
@@ -108,7 +137,8 @@ function render(time) {
         bgctx.fillRect(0, 0, worldSize.width, worldSize.height);
     
         //background
-        const box = areaBoxes
+        // const box = areaBoxes
+        const box = {p1: {x: 0, y: worldSize.height}, p2: {x: worldSize.width, y: worldSize.height - 200}}
         // var bkgrd = bgctx.createLinearGradient(0, box.p2.y * 0.95, 0, worldSize.height);
         // // bkgrd.addColorStop(0.1, 'rgba(221, 135, 107, 0.5)'); //221 185 157 //#DDB99D
         // // bkgrd.addColorStop(0.5, 'rgba(226, 208, 140, 1)'); //#E2D08C //
@@ -125,7 +155,7 @@ function render(time) {
         const chunkW = worldSize.width / 1920;
         //bgctx.fillStyle = "#FFE57F";
         //distant terrain
-        let far = bgctx.createLinearGradient(0, box.p2.y - 300, 0, worldSize.height-200)
+        let far = bgctx.createLinearGradient(0, 0, 0, worldSize.height-200)
         far.addColorStop(0, "#007F5B");
         far.addColorStop(0.5, "#00996B");
         bgctx.fillStyle = far;
@@ -218,20 +248,6 @@ function render(time) {
         
         bgctx.fillStyle = "#000000";
     };
-    
-    function setAABB(id, len){
-        const min = {x: 0, y: 0}
-        const max = {x: 0, y: 0}
-        //get the bounding box values
-        for(let i=0; i<len; i++){
-            const col = boundaryColliders[id+i]
-            min.x = Math.min(min.x, Math.min(col.p1.x, col.p2.x))
-            min.y = Math.min(min.y, Math.min(col.p1.y, col.p2.y))
-            max.x = Math.max(max.x, Math.max(col.p1.x, col.p2.x))
-            max.y = Math.max(max.y, Math.max(col.p1.y, col.p2.y))
-        }
-        return {min, max}
-    }
     
 //id is the array ID from 1st boundary + number of boundaries in obj
 function paintRockMed(id, len){
