@@ -1,4 +1,4 @@
-let canvas, bgctx, scnObj, boundaryCircles, boundaryColliders, areaBoxes, worldScale, cameraX, cameraY, clip, overX, overY;
+let canvas, bgctx, scnObj, boundaryCircles, boundaryColliders, areaBoxes, worldScale, cameraX, cameraY, clip, overX, overY, bark;
 
 let worldSize = {width: 15360, height: 6666};
 let viewport = {width: 0, height: 0}
@@ -73,6 +73,10 @@ onmessage = function(event){
         // boundaryColliders = event.data.boundaryColliders;
         // areaBoxes = event.data.areaBoxes;
         //
+        
+    bark = bgctx.createLinearGradient(0,worldSize.height,0,worldSize.height - 2500)
+    bark.addColorStop(0,"#563B27")
+    bark.addColorStop(1,"#7A6252")
     }
 
 
@@ -355,13 +359,12 @@ function paintStopSign(id, len){
 }
 
 
+
 function paintTree(id, len){
-    // let bark = bgctx.createLinearGradient(boundaryColliders[id].p1.x-50,0,boundaryColliders[id].p1.x+50,0)
-    // bark.addColorStop(0,"#563B27")
-    // bark.addColorStop(1,"#7A6252")
-    bgctx.fillStyle = "#775137"; 
+    //bgctx.fillStyle = "#775137"; 
+    bgctx.fillStyle = bark; 
     bgctx.strokeStyle = "#3A2B22";
-    bgctx.lineWidth = 2; //whole #s only for performance
+    bgctx.lineWidth = 2;
     //bgctx.lineCap= "round";
 
     bgctx.beginPath();

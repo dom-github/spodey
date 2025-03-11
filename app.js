@@ -57,7 +57,7 @@ const bgOverflow = 512;
 // const ofctx = overflowCopy.getContext("2d", { alpha: false });
 
 //15360
-let worldSize = {width: 15360, height: 6666};
+let worldSize = {width: 6666, height: 6666};
 
 if(!threads){
     bgctx.width = window.innerWidth + bgOverflow*2;
@@ -395,6 +395,8 @@ let fliesEaten = 0;
 //lets make a spidey boi
 let spideyPos = {x: 0, y: 0}; 
 let cameraPos = {x: 0, y: 0}; 
+
+let legSort = [0,1,2,3,4,5,6,7];
 //'natural' leg values for anchor + neutral position
 let spideyLegs = [
     //Left leggies
@@ -2489,7 +2491,7 @@ const attack = (type, frequency, attackTime, decayTime, sustainValue, releaseTim
 function checkWebCollision(tx, ty, r){
     let hitLine = -1;
     webArray.forEach((x, i) => {
-        if(
+        if(hitLine === -1 &&
             Math.max(x.p1.x, x.p2.x) > tx - r
             && Math.min(x.p1.x, x.p2.x) < tx + r
             && Math.max(x.p1.y, x.p2.y) > ty - r
@@ -2508,7 +2510,7 @@ function checkCollision(tx, ty, r){
     let collision = -1;
     areaCircles.forEach((x, id) => {
         
-        if(
+        if(collision === -1 &&
             x.x + x.r > tx - r*2
             && x.x - x.r < tx + r*2
             && x.y + x.r > ty - r*2
@@ -2527,7 +2529,8 @@ function checkCollision(tx, ty, r){
     if(collision === -1){
         areaBoxes.forEach((x, id) => { 
             //if (collision) return;
-            if(tx >= x.p1.x - 1
+            if(collision === -1 &&
+                tx >= x.p1.x - 1
                 && tx <= x.p2.x + 1
                 && ty <= x.p1.y + 1
                 && ty >= x.p2.y - 1){
@@ -2547,7 +2550,7 @@ function checkCollision(tx, ty, r){
 
     if(collision === -1){
         boundaryCircles.forEach((x, id) => {
-            if(
+            if(collision === -1 &&
                 x.x + x.r > tx - r*2
                 && x.x - x.r < tx + r*2
                 && x.y + x.r > ty - r*2
@@ -2564,7 +2567,7 @@ function checkCollision(tx, ty, r){
         
     if(collision === -1){
         boundaryColliders.forEach((x, id) => {
-            if(
+            if(collision === -1 &&
                 Math.max(x.p1.x, x.p2.x) > tx - r
                 && Math.min(x.p1.x, x.p2.x) < tx + r
                 && Math.max(x.p1.y, x.p2.y) > ty - r
@@ -2625,7 +2628,7 @@ function fallSFX(i){
 //if nearest is inside r/2 animate it 1x 2y
 function spideyMove(leg) {
     
-    const rotate = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)+(spideyRadius/2.5)), {x: spideyJump[leg].x, y: spideyJump[leg].y})
+    const rotate = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)+(spideyRadius/3)), {x: spideyJump[leg].x, y: spideyJump[leg].y})
     rotate.y = yrotation >= 0? rotate.y : -rotate.y;
     const x = (spideyLegs[leg].x + legMods[leg].x);
     const y = (spideyLegs[leg].y + legMods[leg].y);
@@ -2636,7 +2639,7 @@ function spideyMove(leg) {
             count++
         } 
     }
-    const mirror = leg < 4 ? leg + 4: leg - 4;
+    //const mirror = leg < 4 ? leg + 4: leg - 4;
     if (legMods[leg].anim === grabbing && count >= 1) {
         if (jactive){
             context.fillStyle = "#ff0000";
@@ -2645,40 +2648,30 @@ function spideyMove(leg) {
         }
         
          const dist = Math.sqrt(x * x + y * y);
-        //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y) //legMods[mirror].anim !== walking;
+        //const dist2 = Math.sqrt(rotate.x * rotate.x + rotate.y * rotate.y) //;
         //if (dist < spideyRadius * 0.66 * Math.min(1.33, spiScl) && (dist > ((spideyRadius * Math.min(1.33, spiScl)) / 3))){}
-        if(Math.abs(speed.components[0]) > EPSILON
-            || Math.abs(speed.components[1]) > EPSILON){
-            if(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) ){
-                //only change rotation on "too close" legs 
+        if((Math.abs(speed.components[0]) > EPSILON
+            || Math.abs(speed.components[1]) > EPSILON)
+            &&(dist < ((spideyRadius * Math.min(1.33, spiScl)) / 3) || (dist > spideyRadius * 0.66 * Math.min(1.33, spiScl)))){
                 legMods[leg].anim = walking;
                 legMods[leg].start = lastTimestamp;
-                legMods[leg].dx = rotate.x //+ (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
-                legMods[leg].dy = rotate.y //+ (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
-            } else if (dist > spideyRadius * 0.66 * Math.min(1.33, spiScl)){
+                legMods[leg].dx = rotate.x - spideyLegs[leg].x + (speed.components[0]*5) * spiScl
+                legMods[leg].dy = rotate.y - spideyLegs[leg].y + (speed.components[1]*5) * spiScl
             //console.log("Moving");
-            legMods[leg].anim = walking;
-            legMods[leg].start = lastTimestamp;
-            // legMods[leg].x = legMods[leg].jx;
-            // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = -rotate.x// + (speed.components[0]*5) * spiScl;
-            legMods[leg].dy = -rotate.y //+ (speed.components[1]*5) * spiScl;
-
-            }
         }
         
         //if the leg crosses spidey's axis reset it
         if (//legMods[mirror].anim === grabbing && 
         ((Math.abs(speed.components[0]) > EPSILON && (Math.sign(x) !== Math.sign(rotate.x)))
-        || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 
-            || Math.sign(yrotation - y) !== Math.sign(yrotation - rotate.y))))) {
+        || (Math.abs(speed.components[1]) > EPSILON && (Math.abs(y) <= 1 || 
+            Math.sign(y) !== Math.sign(rotate.y))))) {
             //console.log("Crossing");
             legMods[leg].anim = walking;
             legMods[leg].start = lastTimestamp;
             // legMods[leg].x = legMods[leg].jx;
             // legMods[leg].y = legMods[leg].jy;
-            legMods[leg].dx = rotate.x// + (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
-            legMods[leg].dy = rotate.y// + (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
+                legMods[leg].dx = rotate.x - spideyLegs[leg].x + (speed.components[0]*5) * spiScl// + rotate.x - spideyLegs[leg].x;
+                legMods[leg].dy = rotate.y - spideyLegs[leg].y + (speed.components[1]*5) * spiScl// + rotate.y - spideyLegs[leg].y;
         }
         
     }
@@ -2690,20 +2683,23 @@ function spideyMove(leg) {
         //const line = getNearestWalkLine()
     
         let walkArea = false;
+        let grounded = false;
         const legPosX =  legMods[leg].dx + spideyLegs[leg].x + spideyPos.x;
         const legPosY =  legMods[leg].dy + spideyLegs[leg].y + spideyPos.y;
         //walkAreas
         areaCircles.forEach((x) => {
-            const intersect = intersection({x: legPosX, 
+            if(!walkArea){
+                const intersect = intersection({x: legPosX, 
                 y: legPosY, r: 1}, x)
                 //console.log(intersect)
                 if (intersect.one_is_in_other || intersect.intersect_occurs){
                     walkArea = true; 
                 }
+            } 
         });
     if (!walkArea){
-        areaBoxes.forEach((x) => { 
-            if(legPosX >= x.p1.x - 1
+        areaBoxes.forEach((x, id) => { 
+            if(!walkArea && legPosX >= x.p1.x - 1
                 && legPosX <= x.p2.x + 1
                 && legPosY <= x.p1.y + 1
                 && legPosY >= x.p2.y - 1){
@@ -2717,6 +2713,7 @@ function spideyMove(leg) {
                     }
                 } else {
                     walkArea = true;
+                    if(id==0) grounded = true;
                 }
             }}
         );
@@ -2740,8 +2737,10 @@ function spideyMove(leg) {
         }
         //try to reset if leg has a valid walkarea
         if(walkArea && legMods[leg].anim === walking && legMods[leg].start === lastTimestamp && legMods[leg].dx !== 0 && legMods[leg].dy !== 0){
-            legMods[leg].dx = 0;
-            legMods[leg].dy = 0;
+            const tgtx = grounded? 0 : (rotate.x - spideyLegs[leg].x)*1.33;
+            const tgty = grounded? 0 : (rotate.y - spideyLegs[leg].y)*1.33 + 8 * spiScl;
+            legMods[leg].dx = tgtx;
+            legMods[leg].dy = tgty;
             legMods[leg].x = legMods[leg].jx;
             legMods[leg].y = legMods[leg].jy;
             legMods[leg].start = lastTimestamp;
@@ -2854,6 +2853,10 @@ function spideyCollider() {
     context.lineWidth = 0.5;
     context.strokeStyle = "#ee5555"
 
+    enemies.forEach((x)=>{
+        
+        context.strokeCircle(x.x, x.y, x.r);
+    })
 
     const line = getNearestWalkLine(0, 0);
     if (line > -1) {
@@ -2872,6 +2875,7 @@ function spideyCollider() {
     context.strokeStyle = "#ee9999"
     context.strokeCircle(spideyPos.x, spideyPos.y, spideyRadius * Math.min(1.33, spiScl) / 3);
     context.strokeStyle = "#000000"
+
     }
 }
 
@@ -3061,6 +3065,13 @@ function drawLadybug(bug) {
     
     
     //body
+    context.fillStyle = "#111111";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.ellipse(x, y, 28, 12, -0.05, 0, -Math.PI);
+    context.stroke();
+    context.fill();
+    //carapace
     context.fillStyle = "#ff1111";
     context.lineWidth = 1.5;
     context.beginPath();
@@ -3129,11 +3140,11 @@ function drawLadybug(bug) {
     context.lineTo(x+43, y-12);
     context.stroke();
 
-    if(jactive){
-        context.lineWidth = 1.5;
-        context.strokeStyle = "#ee5555";
-        context.strokeCircle(x,y,bugR)
-    }
+    // if(jactive){
+    //     context.lineWidth = 1.5;
+    //     context.strokeStyle = "#ee5555";
+    //     context.strokeCircle(x,y,bugR)
+    // }
     
 }
 //lets draw an ant
@@ -3275,6 +3286,118 @@ function drawAnt(ant) {
     context.strokeStyle = "#000000"
 }
 
+//let's draw us a Grub!
+//  c0OOOo.
+//   '"
+//
+function drawGrub(grub){
+    
+    let x = grub.x;
+    let y = grub.y;
+    const start = grub.start;
+    const anim = grub.anim;
+    //radius 
+    const R = grub.r;
+
+    //outline 9C6841
+    //body DCC6AE
+    //face/legs A92D00
+    //jaws 7F0E03
+    //eyes 430802
+
+    //legs 
+    context.strokeStyle = "#DD700B";
+    context.lineWidth = R * 0.2;
+    context.lineCap = "round";
+
+    context.beginPath();
+    context.moveTo(x+R*0.75,y + R *0.5)
+    context.quadraticCurveTo(x-R*0.25, y + R*0.5, x, y + R*1.25);
+    context.stroke();
+    
+    context.beginPath();
+    context.moveTo(x+R*1.2,y + R *0.5)
+    context.quadraticCurveTo(x-R*0.2, y + R*0.5, x+R*0.5, y + R);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(x+R*1.5,y + R *0.5)
+    context.quadraticCurveTo(x, y + R*0.5, x+R, y + R);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(x+R*0.5,y + R *0.75)
+    context.quadraticCurveTo(x+R*1.5, y + R, x+R*0.5, y + R*1.5);
+    context.stroke();
+    
+    context.beginPath();
+    context.moveTo(x+R*1.2,y + R *0.75)
+    context.quadraticCurveTo(x+R*2, y + R, x+R*1.2, y + R*1.5);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(x+R*1.5,y + R *0.75)
+    context.quadraticCurveTo(x+R*2.5, y + R, x+R*2, y + R*1.5);
+    context.stroke();
+    
+    //body segments
+    context.lineWidth = Math.min(R*0.1, 2);
+    context.strokeStyle = "#9C6841";
+    context.fillStyle = "#DCC6AE";
+    context.fillCircle(x+R*4.75,y + R*0.1,R*0.75);
+    context.strokeCircle(x+R*4.75,y + R*0.1,R*0.75);
+    
+    context.fillCircle(x+R*4,y,R*0.9);
+    context.strokeCircle(x+R*4,y,R*0.9);
+    
+    context.fillCircle(x+R*3,y-R *0.1,R);
+    context.strokeCircle(x+R*3,y-R *0.1,R);
+    
+    context.fillCircle(x+R*2.1,y-R *0.1,R*1.1);
+    context.strokeCircle(x+R*2.1,y-R *0.1,R*1.1);
+    
+    context.fillCircle(x+R*1.2,y,R);
+    context.strokeCircle(x+R*1.2,y,R);
+    
+    context.fillCircle(x+R*0.5,y + R *0.1,R*0.85);
+    context.strokeCircle(x+R*0.5,y + R *0.1,R*0.85);
+
+    //side dot things 
+    context.fillStyle = "#A92D00";
+    context.fillCircle(x+R*4+R*0.5,y, R*0.1);
+    
+    context.fillCircle(x+R*3+R*0.5,y-R *0.1, R*0.1);
+    
+    context.fillCircle(x+R*2.1+R*0.5,y-R *0.1, R*0.1);
+    
+    context.fillCircle(x+R*1.2+R*0.5,y, R*0.1);
+    
+    context.fillCircle(x+R*0.5+R*0.5,y + R *0.1, R*0.1);
+    //face
+    context.fillCircle(x,y + R *0.25,R*0.5);
+    context.strokeCircle(x,y + R *0.25,R*0.5);
+    //eyes
+    context.fillStyle = "#430802";
+    context.fillCircle(x + R*0.25,y + R *0.25,R*0.05);
+    context.fillCircle(x - R*0.4,y + R *0.25,R*0.05);
+
+    //pincers/jaws
+    context.fillStyle = "#7F0E03";
+    //context.fillCircle(x,y + R *0.25,R*0.25);
+    context.beginPath();
+    context.moveTo(x-R*0.25,y+R*0.25);
+    context.quadraticCurveTo(x - R, y+R*0.5, x-R*0.25, y +R);
+    context.lineTo(x-R*0.4, y + R*0.6);
+
+    //context.fill();
+    //context.beginPath();
+    context.lineTo(x,y+R*0.25);
+    context.quadraticCurveTo(x + R*0.75, y+R*0.5, x, y +R);
+    context.lineTo(x+R*0.1, y + R*0.6)
+    context.fill();
+    
+
+}
 
 //lets draw a fly
 //   (()
@@ -3394,9 +3517,13 @@ let xrotation = 0.1;
 //do fewer Y so flip upside down is 'easier'
 let prevyrot = [
     yrotation,0,0,0,
+    yrotation,0,0,0,
+    yrotation,0,0,0,
     0,0,0,yrotation
 ];
 let prevxrot = [
+    0,0,0,xrotation,
+    0,0,0,xrotation,
     0,0,0,xrotation,
     0,0,0,xrotation
 ];
@@ -3409,7 +3536,7 @@ function drawSpidey(x, y) {
     //leg dir
     //"rotation" values are derived from avg. foot placement dist from middle (-50...0...50)
 
-    yrotation = 20;
+    yrotation = 10;
     xrotation = 0.1;
     //prevent 0 values
     let sumx = 0;
@@ -3422,11 +3549,16 @@ function drawSpidey(x, y) {
             xrotation = doubleClamp(sumx / 8, -spideyRadius * Math.min(1.33, spiScl), spideyRadius * Math.min(1.33, spiScl));
         }
     }
-    if (Math.abs(yrotation) >= 0) {
+    if (Math.abs(yrotation) >= spideyRadius / 5 || Math.abs(xrotation) >= spideyRadius / 5) {
         prevyrot.shift();
-        prevxrot.shift()
+        prevxrot.shift();
         prevyrot.push(yrotation);
         prevxrot.push(xrotation);
+    } else {
+        prevyrot.shift();
+        prevxrot.shift();
+        prevyrot.push(10);
+        prevxrot.push(0.1);
     }
     yrotation = prevyrot.reduce((acc, cur) => acc + cur) / prevyrot.length;
     xrotation = prevxrot.reduce((acc, cur) => acc + cur) / prevxrot.length;
@@ -3516,7 +3648,7 @@ function drawSpidey(x, y) {
         }
         if (legMods[i].anim === walking) {
             //250ms default step ... 1/4 spidey radius 
-            const stepSpeed = Math.min(333, 50*spiScl) + 256 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*10//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
+            const stepSpeed = Math.min(333, 50*spiScl) + 202 - (Math.abs(speed.components[0]) + Math.abs(speed.components[1]))*10//(250 + (100 * Math.abs(Math.hypot(difx, dify)) / (spideyRadius))) ;
             const sec = Math.min(elapsed/stepSpeed, 1);  
             //console.log(Math.trunc(Math.hypot(difx, dify)) / (spideyRadius*2))
 
@@ -3529,7 +3661,7 @@ function drawSpidey(x, y) {
             
             //abs (0.5 - sec) = 0.5...0...-0.5
             
-            ay = -(spideyRadius * 3 * ((yrotation / 2) / (spideyRadius / 3))) * (0.5 - Math.abs(0.5 - step));
+            ay = -(spideyRadius * 2 * ((yrotation / 2) / (spideyRadius / 3))) * (0.5 - Math.abs(0.5 - step));
             //console.log("leg:", i, ay);
             
             //current position in anim frame
@@ -3673,8 +3805,8 @@ function drawSpidey(x, y) {
         // const legOrigX = (legOrigins[i].x + ((legOrigins[i].y - legOrigins[i].x) * Math.min(1, Math.abs(xrotation/(spideyRadius/2)))))
         // const legOrigY = (legOrigins[i].y + ((legOrigins[i].x - legOrigins[i].y) * doubleClamp(-xrotation/spideyRadius, -0.5, 1)))
 
-        const rotorig = rotate_point(0, 0, Math.atan2((-xrotation), -spideyRadius/2.5), {x: legOrigins[i].x, y: legOrigins[i].y});
-        const invrotorig = rotate_point(0, 0, Math.atan2((-xrotation), spideyRadius/2.5), {x: -legOrigins[i].x, y: -legOrigins[i].y});
+        const rotorig = rotate_point(0, 0, Math.atan2((-xrotation), -spideyRadius/3), {x: legOrigins[i].x, y: legOrigins[i].y});
+        const invrotorig = rotate_point(0, 0, Math.atan2((-xrotation), spideyRadius/3), {x: -legOrigins[i].x, y: -legOrigins[i].y});
         const legOrigX = yrotation >= 0 ? rotorig.x : invrotorig.x;
         const legOrigY = yrotation >= 0 ? rotorig.y : invrotorig.y;
         //const legrot = rotate_point(0, 0, Math.atan2(copySign(yrotation,legOrigins[i].x), -xrotation), {x: legOrigX,y: legOrigY});
@@ -3685,8 +3817,8 @@ function drawSpidey(x, y) {
             + (((dy) * (legOrigins[i].y/(2*spiScl))) 
             * (1 - Math.abs(yrotation / (spideyRadius))))
 
-        const rotated = rotate_point(0, 0, Math.atan2(xrotation, -spideyRadius/2.5), {x: xanchor-x,y: yanchor-y});
-        const invrotated = rotate_point(0, 0, Math.atan2(xrotation, spideyRadius/2.5), {x: xanchor-x,y: yanchor-y});
+        const rotated = rotate_point(0, 0, Math.atan2(xrotation, -spideyRadius/3), {x: xanchor-x,y: yanchor-y});
+        const invrotated = rotate_point(0, 0, Math.atan2(xrotation, spideyRadius/3), {x: xanchor-x,y: yanchor-y});
         //rotate the stepping offset!
         const rotay = rotate_point(0, 0, Math.atan2(-xrotation, Math.abs(yrotation)), {x: 0, y: ay});
         ay = rotay.y
@@ -3802,11 +3934,19 @@ function drawSpidey(x, y) {
         //}
         
         
-        spideyMove(i);
+        //spideyMove(i);
 
         
     }
+
+    legSort.sort((a,b) => {
+        if(dist2({x:0,y:0},{x: legMods[a].x + spideyLegs[a].x, y: legMods[a].y + spideyLegs[a].y}) < dist2({x:0,y:0},{x: legMods[b].x + spideyLegs[b].x, y: legMods[b].y + spideyLegs[b].y})){
+            return 1
+        }else {return -1}
+    })
+    legSort.forEach((x)=> spideyMove(x))
     
+
     //console.log(xrotation/Math.abs(xrotation), yrotation/Math.abs(yrotation))
     //eyes temp
     //whites
@@ -4868,9 +5008,35 @@ function move() {
     xmov *= deltaTime;
     ymov *= deltaTime;
     // }
+    // console.log("Modes", legMods, spideyLegs)
     //move spidey pos
     spideyPos.x += xmov;
     spideyPos.y += ymov;
+    for (let i=0; i < legMods.length; i++) {
+
+        const dist = Math.sqrt((legMods[i].x + spideyLegs[i].x) * (legMods[i].x + spideyLegs[i].x) + (legMods[i].y + spideyLegs[i].y) * (legMods[i].y + spideyLegs[i].y))
+        const xd = Math.abs(legMods[i].x + spideyLegs[i].x) / dist;
+        const yd = Math.abs(legMods[i].y + spideyLegs[i].y) / dist;
+        if (legMods[i].anim === grabbing) {
+            legMods[i].x -= xmov;
+            // legMods[i].dx -= xmov;
+            // legMods[i].jx -= xmov;
+            legMods[i].y -= ymov;
+            // legMods[i].dy -= ymov;
+            // legMods[i].jy -= ymov;
+            legMods[i].x = Math.max((-spideyRadius * 0.67 * Math.min(1.33, spiScl))*xd - spideyLegs[i].x, Math.min(legMods[i].x, (spideyRadius * 0.67 * Math.min(1.33, spiScl))*xd - spideyLegs[i].x));
+            legMods[i].y = Math.max((-spideyRadius * 0.67 * Math.min(1.33, spiScl))*yd - spideyLegs[i].y, Math.min(legMods[i].y, (spideyRadius * 0.67 * Math.min(1.33, spiScl))*yd - spideyLegs[i].y));
+
+        } 
+        else if (legMods[i].anim === walking) {
+            legMods[i].x -= xmov;
+            legMods[i].y -= ymov;
+
+            legMods[i].x = Math.max((-spideyRadius * 0.67 * Math.min(1.33, spiScl))*xd - spideyLegs[i].x, Math.min(legMods[i].x, (spideyRadius * 0.67 * Math.min(1.33, spiScl))*xd - spideyLegs[i].x));
+            legMods[i].y = Math.max((-spideyRadius * 0.67 * Math.min(1.33, spiScl))*yd - spideyLegs[i].y, Math.min(legMods[i].y, (spideyRadius * 0.67 * Math.min(1.33, spiScl))*yd - spideyLegs[i].y));
+
+        }
+
     //camera boundaries 
     cameraPos.x = Math.max(0, Math.min(spideyPos.x, worldSize.width - viewport.width*0.5));
     cameraPos.y = Math.max(0, Math.min(spideyPos.y, worldSize.height - viewport.height*0.5));
@@ -4879,33 +5045,6 @@ function move() {
     //spideyPos.x = Math.min(worldCanvas.width - radius + buffer,Math.max(radius - buffer, spideyPos.x))
     //spideyPos.y = Math.min(worldCanvas.height - radius + buffer,Math.max(radius - buffer, spideyPos.y))
 
-    
-    for (let i=0; i < legMods.length; i++) {
-        if (legMods[i].anim === grabbing) {
-            legMods[i].x -= xmov;
-            // legMods[i].dx -= xmov;
-            // legMods[i].jx -= xmov;
-            legMods[i].y -= ymov;
-            // legMods[i].dy -= ymov;
-            // legMods[i].jy -= ymov;
-            legMods[i].x = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x, Math.min(legMods[i].x, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x));
-            legMods[i].y = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y, Math.min(legMods[i].y, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y));
-         
-        } 
-        else if (legMods[i].anim === walking) {
-            legMods[i].x -= xmov;
-            legMods[i].y -= ymov;
-
-            legMods[i].x = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x, Math.min(legMods[i].x, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x));
-            legMods[i].y = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y, Math.min(legMods[i].y, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y));
-            legMods[i].dx = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x, Math.min(legMods[i].dx, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].x));
-            legMods[i].dy = Math.max(-spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y, Math.min(legMods[i].dy, spideyRadius * 0.66 * Math.min(1.33, spiScl) - spideyLegs[i].y));
-     
-            // if(legMods[i].start === lastTimestamp){
-            //     legMods[i].dx += xmov;
-            //     legMods[i].dy += ymov;
-            // }
-        }
         
         // if (0 + (radius) + buffer <= spideyPos.x &&
         //     spideyPos.x <= worldCanvas.width - (radius) - buffer)
@@ -4932,9 +5071,12 @@ function move() {
 function drawEnemies(){
     
     if (!startgame && (enemies.length === 0 || enemies.every((x) => {return !x.active}))) {
-       //enemies.push({type: 1, x: viewport.width*0.6, y:worldSize.height - 190,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
-       enemies.push({type: 2, r: 60, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: worldSize.width, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
-        for(let i=0;i<1001;i++){
+
+       //enemies.push({type: 1, r: 50, x: viewport.width*0.2, y:worldSize.height - 100,start: 1000 *  Math.random(), dx: 0, dy: worldSize.height - 190, active: true, anim: none});
+       enemies.push({type: 2, r: 60, x: viewport.width*0.4, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: viewport.width*0.4, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
+       enemies.push({type: 3, r: 8, x: viewport.width*0.2, y:worldSize.height - 90,start: 1000 *  Math.random(), dx: viewport.width*0.4, dy: worldSize.height - 90, active: true, anim: none, lmods: [{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}]});
+       
+       for(let i=0;i<1001;i++){
             //enemies.push({type: 0, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
             enemies.push({type: 0, r: 9, x: worldSize.width * Math.random(), y: worldSize.height * Math.random(), start: 1000 *  Math.random(), dx: worldSize.width * Math.random(), dy: worldSize.height * Math.random(), active: true, anim: flying})
 
@@ -4956,6 +5098,9 @@ function drawEnemies(){
                         break
                     case 2:
                         drawLadybug(x);
+                        break
+                    case 3:
+                        drawGrub(x);
                         break
                 default: drawFly(x);
             }
@@ -5018,10 +5163,10 @@ function drawObjects(bgXoffset, bgYoffset){
         //console.log(overdraw + Math.abs(overX), overdraw + Math.abs(overY), bgOverflow+viewport.width, bgOverflow+viewport.height)
         bgctx.beginPath();
         bgctx.rect(0,0,background.width/worldScale,background.height/worldScale);
-        bgctx.moveTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), overdraw/worldScale + Math.abs(Math.round(overY*worldScale)));
-        bgctx.lineTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), bgOverflow/worldScale + viewport.height/worldScale)
-        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale + viewport.height/worldScale)
-        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, overdraw/worldScale + Math.abs(Math.round(overY*worldScale)))
+        bgctx.moveTo(bgOverflow/worldScale, bgOverflow/worldScale);
+        bgctx.lineTo(bgOverflow/worldScale, bgOverflow/worldScale + viewport.height/worldScale);
+        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale + viewport.height/worldScale);
+        bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale);
         bgctx.clip();
         //bgctx.fill();
         bgctx.translate(-bgXoffset + overX, -bgYoffset + overY);
@@ -5086,13 +5231,14 @@ function drawObjects(bgXoffset, bgYoffset){
                 //cbgctx.drawImage(background, 0,0, background.width * worldScale, background.height * worldScale, 0, 0, background.width, background.height);
                 //bgctx.fillRect(0,0,bgw, bgh);
 
+
                 bgctx.save();
                 bgctx.beginPath();
                 bgctx.rect(0,0,background.width/worldScale,background.height/worldScale);
-                bgctx.moveTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), overdraw/worldScale + Math.abs(Math.round(overY*worldScale)));
-                bgctx.lineTo(overdraw/worldScale + Math.abs(Math.round(overX*worldScale)), bgOverflow/worldScale + viewport.height/worldScale)
+                bgctx.moveTo(bgOverflow/worldScale, bgOverflow/worldScale);
+                bgctx.lineTo(bgOverflow/worldScale, bgOverflow/worldScale + viewport.height/worldScale)
                 bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale + viewport.height/worldScale)
-                bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, overdraw/worldScale + Math.abs(Math.round(overY*worldScale)))
+                bgctx.lineTo(bgOverflow/worldScale+viewport.width/worldScale, bgOverflow/worldScale)
                 bgctx.clip();
                 bgctx.translate(-bgXoffset, -bgYoffset);
                 bgctx.fillStyle = sky;
@@ -5104,7 +5250,8 @@ function drawObjects(bgXoffset, bgYoffset){
                 if (overY > 0) bgctx.fillRect(bgXoffset, bgYoffset+bgh/worldScale-Math.ceil(Math.abs(overY)), bgw/worldScale, bgOverflow);
                 //right bar
                 if (overX > 0) bgctx.fillRect(bgXoffset+bgw/worldScale-Math.ceil(Math.abs(overX)), bgYoffset, bgOverflow, bgh/worldScale); 
-           
+                
+            
                 bgOffset.x = cameraPos.x;
                 bgOffset.y = cameraPos.y;
             }
@@ -5270,21 +5417,6 @@ if(viewport.height - 80 < logoHeight){
 // if you rotate it... ih8u 
 
 
-let spaceHeld = 0;
-let jumpCoolDown = 0;
-let curYPos = 0;
-let dashCoolDown = -9990;
-
-let startgame = true;
-
-// newGame();
-// initScene();
-// addBoundaries();
-let firstclick = 0;
-spideyPos = {x: 200, y: worldSize.height - 200}
-let startButton, optionsButton, quitButton; 
-
-
 //temp
 function UIBoundaries() {
 
@@ -5298,6 +5430,22 @@ function UIBoundaries() {
         //uictx.fillStyle = "#ffffff";
 }   
 UIBoundaries();
+
+
+let spaceHeld = 0;
+let jumpCoolDown = 0;
+let curYPos = 0;
+let dashCoolDown = -9990;
+
+let startgame = true;
+
+//newGame();
+// initScene();
+// addBoundaries();
+let firstclick = 0;
+spideyPos = {x: 200, y: worldSize.height - 200}
+let startButton, optionsButton, quitButton; 
+
 
 let zero;
 function firstFrame(timestamp) {
@@ -5573,7 +5721,8 @@ function update(timestamp) {
         const bgXoffset = Math.max(0, Math.min(spideyPos.x - bgw*0.5, worldSize.width - bgw));
         const bgYoffset = Math.max(0, Math.min(spideyPos.y - bgh*0.5, worldSize.height - bgh));
         
-        drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
+        if (!threads) drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
+
         const overdrawX = (bgXoffset - Math.max(0, Math.min((bgOffset.x - bgw*0.5), worldSize.width - bgw)));
         const overdrawY = (bgYoffset - Math.max(0, Math.min((bgOffset.y - bgh*0.5), worldSize.height - bgh)));
         
@@ -5585,6 +5734,7 @@ function update(timestamp) {
                 w * worldScale, h * worldScale, 0, 0,
             w, h)
 
+        if (threads) drawObjects(bgXoffset-bgOverflow/worldScale, bgYoffset-bgOverflow/worldScale);
         
 
         // context.drawImage(background, 0, 0,
@@ -5927,6 +6077,8 @@ function wheelHandler(e) {
 
 function newGame(){
     console.log("Start!")
+    //reset boundaries
+    boundaryColliders.length = 0;
     //uictx.clearRect(0,0,UI.width,UI.height);
     // UI.width = 0;
     // UI.height = 0;
@@ -5937,7 +6089,7 @@ function newGame(){
         drawMobileUI();
     }
     scaleSpidey(50);
-    scaleWorld(1);
+    scaleWorld(2);
     startgame = false;
     skipMouseInput = true;
     initScene();
